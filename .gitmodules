@@ -4,3 +4,4 @@
 [submodule "vendor/alt-tab-macos"]
 	path = vendor/alt-tab-macos
 	url = git@github.com:dagahan/alt-tab-macos.git
+	branch = mac-setup

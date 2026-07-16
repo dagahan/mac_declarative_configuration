@@ -3,6 +3,7 @@ tap "FelixKratz/formulae"
 
 # CLI
 brew "git"
+brew "bash"
 brew "xcodegen"
 brew "sketchybar"
 
