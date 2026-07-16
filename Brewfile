@@ -5,6 +5,7 @@ brew "git"
 brew "bash"
 brew "xcodegen"
 brew "sketchybar"
+brew "uv"
 
 # Window manager and switcher are built from vendor/ forks (modules 30, 55)
 
@@ -17,3 +18,10 @@ cask "karabiner-elements"
 
 # Clipboard history
 cask "maccy"
+
+# IDE
+cask "visual-studio-code"
+
+# Media
+cask "spotify"
+
