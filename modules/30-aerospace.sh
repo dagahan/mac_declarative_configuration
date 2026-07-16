@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # Activate AeroSpace and load the repo config.
 #
 # Today this uses the upstream cask from the Brewfile. When the fork in

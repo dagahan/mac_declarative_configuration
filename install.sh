@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # mac_setup — one-shot, idempotent installer.
 # Usage:
 #   ./install.sh              run every module in order
@@ -15,8 +15,8 @@ for module in modules/[0-9]*.sh; do
     fi
     echo
     echo "───────── $name ─────────"
-    bash "$module"
+    zsh "$module"
 done
 
 echo
-echo "All done. Check README.md → 'Manual post-install steps' for the one-time permission grants."
+echo "All done."

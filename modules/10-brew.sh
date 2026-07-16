@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # Homebrew itself + everything declared in the Brewfile.
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"

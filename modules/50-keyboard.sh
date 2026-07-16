@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # Key remapping via Karabiner-Elements.
 # The actual rules live in config/karabiner/karabiner.json (linked by module 20):
 #   - Cmd+Tab -> vk_none  (kills the macOS app switcher; workspaces replace it)
