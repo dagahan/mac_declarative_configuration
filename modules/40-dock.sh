@@ -1,6 +1,4 @@
 #!/usr/bin/env zsh
-# Dock: auto-hide with zero reveal delay and a quick slide-in,
-# nothing pinned, no recents — only running apps appear.
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 

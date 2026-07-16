@@ -1,12 +1,9 @@
 #!/usr/bin/env zsh
-# Key remapping via Karabiner-Elements.
-# The actual rules live in config/karabiner/karabiner.json (linked by module 20):
-#   - Cmd+Tab -> vk_none  (kills the macOS app switcher; workspaces replace it)
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
 if [[ ! -d "/Applications/Karabiner-Elements.app" ]]; then
-    warn "Karabiner-Elements missing — run module 10 (brew) first"
+    warn "Karabiner-Elements missing — run module 10 first"
     exit 1
 fi
 

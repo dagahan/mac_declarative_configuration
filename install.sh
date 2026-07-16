@@ -1,19 +1,17 @@
 #!/usr/bin/env zsh
-# mac_setup — one-shot, idempotent installer.
-# Usage:
-#   ./install.sh              run every module in order
-#   ./install.sh 40           run only module(s) whose number matches
 set -euo pipefail
 cd "$(dirname "$0")"
 
 filter="${1:-}"
 
-# One sudo prompt up front; a background loop keeps the ticket fresh so any
-# later sudo (e.g. cask pkg installers) runs without asking again.
-# The password itself is only ever seen by sudo — never stored anywhere.
-sudo -v
-( while true; do sudo -n true; sleep 50; kill -0 $$ 2>/dev/null || exit; done ) &
-trap 'kill %1 2>/dev/null' EXIT
+read -rs "SUDO_PASSWORD?sudo password: "
+echo
+export SUDO_PASSWORD
+printf '%s\n' "$SUDO_PASSWORD" | sudo -S -v 2>/dev/null || { echo "sudo validation failed"; exit 1; }
+export SUDO_ASKPASS="$(mktemp)"
+trap 'rm -f "$SUDO_ASKPASS"' EXIT
+printf '#!/bin/sh\nprintf "%%s\\n" "$SUDO_PASSWORD"\n' > "$SUDO_ASKPASS"
+chmod 700 "$SUDO_ASKPASS"
 
 for module in modules/[0-9]*.sh; do
     name="$(basename "$module")"
