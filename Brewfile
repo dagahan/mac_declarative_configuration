@@ -2,6 +2,7 @@ tap "nikitabobko/tap"
 
 # CLI
 brew "git"
+brew "xcodegen"
 
 # Window manager — swap this cask for the fork build (modules/30-aerospace.sh)
 # once vendor/AeroSpace diverges from upstream.
@@ -13,3 +14,7 @@ cask "font-jetbrains-mono-nerd-font"
 
 # Key remapping (Cmd+Tab disable lives in config/karabiner/karabiner.json)
 cask "karabiner-elements"
+
+# Windows-style switcher (Cmd+Tab on workspace 1) and clipboard history
+cask "alt-tab"
+cask "maccy"

@@ -7,14 +7,27 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Disable Cmd+Tab app switcher (workspaces replace it)",
+                        "description": "Cmd+Tab -> nothing on tiling workspaces (AltTab handles it on workspace 1)",
                         "manipulators": [
                             {
                                 "type": "basic",
+                                "conditions": [
+                                    { "type": "variable_if", "name": "aerospace_tiling", "value": 1 }
+                                ],
                                 "from": {
                                     "key_code": "tab",
                                     "modifiers": { "mandatory": ["command"], "optional": ["any"] }
                                 },
+                                "to": [{ "key_code": "vk_none" }]
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Disable Mission Control key (F3)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "apple_vendor_keyboard_key_code": "mission_control" },
                                 "to": [{ "key_code": "vk_none" }]
                             }
                         ]
