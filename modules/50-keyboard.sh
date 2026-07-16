@@ -10,12 +10,13 @@ if [[ ! -d "/Applications/Karabiner-Elements.app" ]]; then
     exit 1
 fi
 
-log "launching Karabiner-Elements (it picks up the linked karabiner.json)"
-open -a Karabiner-Elements
+log "Karabiner-Elements installed; it reads the linked karabiner.json"
 
 cat <<'EOF'
 One-time manual steps (macOS requires the user to do these, see README):
-  1. System Settings -> Privacy & Security: allow the Karabiner driver extension.
-  2. System Settings -> Privacy & Security -> Input Monitoring: enable both
+  1. Open Karabiner-Elements once yourself — its background services register
+     on first launch (no window is opened by this script on purpose).
+  2. System Settings -> Privacy & Security: allow the Karabiner driver extension.
+  3. System Settings -> Privacy & Security -> Input Monitoring: enable both
      karabiner_grabber and karabiner_observer.
 EOF
