@@ -1,0 +1,3 @@
+[submodule "vendor/AeroSpace"]
+	path = vendor/AeroSpace
+	url = https://github.com/nikitabobko/AeroSpace.git

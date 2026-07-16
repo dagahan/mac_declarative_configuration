@@ -1,0 +1,26 @@
+{
+    "profiles": [
+        {
+            "name": "mac_setup",
+            "selected": true,
+            "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" },
+            "complex_modifications": {
+                "rules": [
+                    {
+                        "description": "Disable Cmd+Tab app switcher (workspaces replace it)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "tab",
+                                    "modifiers": { "mandatory": ["command"], "optional": ["any"] }
+                                },
+                                "to": [{ "key_code": "vk_none" }]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
