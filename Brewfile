@@ -1,8 +1,10 @@
 tap "nikitabobko/tap"
+tap "FelixKratz/formulae"
 
 # CLI
 brew "git"
 brew "xcodegen"
+brew "sketchybar"
 
 # Window manager — swap this cask for the fork build (modules/30-aerospace.sh)
 # once vendor/AeroSpace diverges from upstream.

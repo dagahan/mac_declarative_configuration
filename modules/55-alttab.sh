@@ -7,16 +7,16 @@ if [[ ! -d "/Applications/AltTab.app" ]]; then
     exit 1
 fi
 
-log "AltTab: Cmd+Tab trigger, start at login"
-defaults write com.lwouis.alt-tab-macos holdShortcut -string "⌘"
-defaults write com.lwouis.alt-tab-macos startAtLogin -bool true
+current="$(defaults read com.lwouis.alt-tab-macos holdShortcut 2>/dev/null || echo none)"
+if [[ "$current" != "⌘" ]]; then
+    pgrep -q AltTab && { pkill AltTab; sleep 1; }
+    log "AltTab: setting Cmd+Tab trigger"
+    defaults write com.lwouis.alt-tab-macos holdShortcut -string "⌘"
+fi
 
 if ! pgrep -q AltTab; then
-    cat <<'EOF'
-One-time manual steps for AltTab:
-  1. Open AltTab.app once yourself (no window is opened by this script on purpose).
-  2. Grant the two permissions it asks for:
-     System Settings > Privacy & Security > Accessibility:     AltTab
-     System Settings > Privacy & Security > Screen Recording:  AltTab (for window previews)
-EOF
+    log "launching AltTab"
+    open -g -a AltTab
+    sleep 2
+    pgrep -q AltTab || warn "AltTab did not start — open it once manually and grant Accessibility + Screen Recording"
 fi

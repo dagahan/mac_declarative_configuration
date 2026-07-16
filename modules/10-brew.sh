@@ -9,5 +9,9 @@ if ! command -v brew >/dev/null; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
+grep -E '^tap "' "$REPO_ROOT/Brewfile" | cut -d'"' -f2 | while read -r t; do
+    brew trust "$t" >/dev/null 2>&1 || true
+done
+
 log "brew bundle"
 brew bundle --file="$REPO_ROOT/Brewfile"
