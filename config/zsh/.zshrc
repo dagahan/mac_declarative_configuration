@@ -4,3 +4,6 @@ ZSH_THEME="robbyrussell"
 plugins=(git)
 
 source "$ZSH/oh-my-zsh.sh"
+
+alias cls='clear'
+alias la='ls -a'
