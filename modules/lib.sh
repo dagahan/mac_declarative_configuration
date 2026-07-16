@@ -1,3 +1,5 @@
+export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+
 # ${(%):-%N} = zsh for "path of the file currently being sourced"
 REPO_ROOT="$(cd "$(dirname "${(%):-%N}")/.." && pwd)"
 

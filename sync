@@ -4,14 +4,20 @@ cd "$(dirname "$0")"
 
 filter="${1:-}"
 
-read -rs "SUDO_PASSWORD?sudo password: "
-echo
-export SUDO_PASSWORD
-printf '%s\n' "$SUDO_PASSWORD" | sudo -S -v 2>/dev/null || { echo "sudo validation failed"; exit 1; }
-export SUDO_ASKPASS="$(mktemp)"
-trap 'rm -f "$SUDO_ASKPASS"' EXIT
-printf '#!/bin/sh\nprintf "%%s\\n" "$SUDO_PASSWORD"\n' > "$SUDO_ASKPASS"
-chmod 700 "$SUDO_ASKPASS"
+if ! sudo -n true 2>/dev/null; then
+    if [[ -t 0 ]]; then
+        read -rs "SUDO_PASSWORD?sudo password: "
+        echo
+        export SUDO_PASSWORD
+        printf '%s\n' "$SUDO_PASSWORD" | sudo -S -v 2>/dev/null || { echo "sudo validation failed"; exit 1; }
+        export SUDO_ASKPASS="$(mktemp)"
+        trap 'rm -f "$SUDO_ASKPASS"' EXIT
+        printf '#!/bin/sh\nprintf "%%s\\n" "$SUDO_PASSWORD"\n' > "$SUDO_ASKPASS"
+        chmod 700 "$SUDO_ASKPASS"
+    else
+        echo "note: no sudo ticket and no terminal to ask — sudo-needing steps may fail"
+    fi
+fi
 
 for module in modules/[0-9]*.sh; do
     name="$(basename "$module")"

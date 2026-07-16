@@ -27,7 +27,7 @@
                         "manipulators": [
                             {
                                 "type": "basic",
-                                "from": { "apple_vendor_keyboard_key_code": "mission_control" },
+                                "from": { "apple_vendor_keyboard_key_code": "expose_all" },
                                 "to": [{ "key_code": "vk_none" }]
                             },
                             {

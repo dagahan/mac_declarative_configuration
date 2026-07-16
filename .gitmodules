@@ -1,3 +1,6 @@
 [submodule "vendor/AeroSpace"]
 	path = vendor/AeroSpace
 	url = git@github.com:dagahan/AeroSpace.git
+[submodule "vendor/alt-tab-macos"]
+	path = vendor/alt-tab-macos
+	url = git@github.com:dagahan/alt-tab-macos.git
