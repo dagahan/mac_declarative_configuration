@@ -2,29 +2,24 @@
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
-# defaults read prints the stored cmd symbol either raw or unicode-escaped
-is_cmd() { [[ "$1" == "⌘" || "$1" == *u2318* ]] }
-
 if [[ ! -d "/Applications/AltTab.app" ]]; then
     warn "AltTab missing — run module 10 first"
     exit 1
-fi
-
-current="$(defaults read com.lwouis.alt-tab-macos holdShortcut 2>/dev/null || echo none)"
-if ! is_cmd "$current"; then
-    if pgrep -q AltTab; then
-        osascript -e 'quit app "AltTab"' 2>/dev/null || pkill AltTab
-        sleep 2
-    fi
-    log "AltTab: setting Cmd+Tab trigger"
-    defaults write com.lwouis.alt-tab-macos holdShortcut -string "⌘"
-    is_cmd "$(defaults read com.lwouis.alt-tab-macos holdShortcut)" || { warn "trigger write did not stick"; exit 1; }
 fi
 
 if ! pgrep -q AltTab; then
     log "launching AltTab"
     open -g -a AltTab
     sleep 2
-    pgrep -q AltTab || warn "AltTab did not start — open it once manually and grant Accessibility + Screen Recording"
 fi
-log "AltTab on Cmd+Tab, running"
+
+# shortcuts are stored as NSKeyedArchiver blobs; only AltTab itself (or our
+# fork's changed default) can write them
+if ! python3 -c "
+import subprocess, plistlib, sys
+d = plistlib.loads(subprocess.run(['defaults','export','com.lwouis.alt-tab-macos','-'],capture_output=True).stdout)
+sys.exit(0 if '⌘' in str(d.get('holdShortcut','')) else 1)"; then
+    warn "AltTab trigger is not Cmd+Tab yet — one-time manual step:"
+    echo "      AltTab settings > Controls > Shortcut 1 > Hold: change ⌥ to ⌘"
+    echo "      (permanent fix ships with the fork build: default changed in source)"
+fi
