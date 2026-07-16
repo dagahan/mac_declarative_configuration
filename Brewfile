@@ -1,5 +1,8 @@
 tap "nikitabobko/tap"
 
+# CLI
+brew "git"
+
 # Window manager — swap this cask for the fork build (modules/30-aerospace.sh)
 # once vendor/AeroSpace diverges from upstream.
 cask "nikitabobko/tap/aerospace"
