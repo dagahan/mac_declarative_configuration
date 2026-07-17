@@ -29,4 +29,5 @@ cask "visual-studio-code"
 # Media
 cask "spotify"
 cask "ayugram"
+cask "amneziavpn"
 
