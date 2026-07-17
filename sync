@@ -8,12 +8,15 @@ if ! sudo -n true 2>/dev/null; then
     if [[ -t 0 ]]; then
         read -rs "SUDO_PASSWORD?sudo password: "
         echo
-        export SUDO_PASSWORD
         printf '%s\n' "$SUDO_PASSWORD" | sudo -S -v 2>/dev/null || { echo "sudo validation failed"; exit 1; }
         export SUDO_ASKPASS="$(mktemp)"
         trap 'rm -f "$SUDO_ASKPASS"' EXIT
-        printf '#!/bin/sh\nprintf "%%s\\n" "$SUDO_PASSWORD"\n' > "$SUDO_ASKPASS"
+        # sudo's env_reset strips arbitrary vars (incl. an exported SUDO_PASSWORD) before running
+        # the askpass helper, so the secret must be embedded in the script text itself, not read
+        # from the environment at askpass-invocation time.
+        { print -r -- '#!/bin/sh'; print -r -- "printf '%s\\n' ${(qq)SUDO_PASSWORD}"; } > "$SUDO_ASKPASS"
         chmod 700 "$SUDO_ASKPASS"
+        unset SUDO_PASSWORD
     else
         echo "note: no sudo ticket and no terminal to ask — sudo-needing steps may fail"
     fi
