@@ -23,6 +23,7 @@ if [[ -d /Applications/Xcode.app ]]; then
         pkill -x AeroSpace 2>/dev/null || true
         rm -rf /Applications/AeroSpace.app
         ditto "$app" /Applications/AeroSpace.app
+        codesign -f -s mac-setup-codesign --deep /Applications/AeroSpace.app
         cp -f "$cli" /opt/homebrew/bin/aerospace
         echo "$head" > "$stamp"
         log "installed fork build (app + cli)"
