@@ -14,6 +14,7 @@ log "disabling Dock jump/bounce animations"
 defaults write com.apple.dock launchanim -bool false
 defaults write com.apple.dock mineffect -string "scale"
 defaults write com.apple.dock expose-animation-duration -float 0
+defaults write com.apple.dock no-bouncing -bool true
 
 killall Dock
 log "Dock restarted"
