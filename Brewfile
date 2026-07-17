@@ -29,5 +29,10 @@ cask "visual-studio-code"
 # Media
 cask "spotify"
 cask "ayugram"
-cask "amneziavpn"
+
+# vpn
+#cask "amneziavpn"
+
+# controls
+cask "linearmouse"
 
