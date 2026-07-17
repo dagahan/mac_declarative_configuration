@@ -27,7 +27,6 @@ if [[ -d /Applications/Xcode.app ]]; then
         cp -f "$cli" /opt/homebrew/bin/aerospace
         echo "$head" > "$stamp"
         log "installed fork build (app + cli)"
-        warn "ad-hoc signature changed — re-grant Accessibility to AeroSpace when macOS asks"
     else
         log "AeroSpace build up to date (${head:0:8})"
     fi
@@ -43,7 +42,7 @@ fi
 log "launching AeroSpace"
 open -g -a AeroSpace
 
-for _ in 1 2 3 4 5; do
+for _ in {1..12}; do
     if aerospace reload-config 2>/dev/null; then
         log "config loaded: $(aerospace config --config-path)"
         "$REPO_ROOT/config/aerospace/workspace-hook.sh" "$(aerospace list-workspaces --focused)"

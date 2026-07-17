@@ -6,3 +6,6 @@
 	path = vendor/alt-tab-macos
 	url = git@github.com:dagahan/alt-tab-macos.git
 	branch = mac-setup
+[submodule "vendor/macos_automation_scripts"]
+	path = vendor/macos_automation_scripts
+	url = git@github.com:dagahan/macos_automation_scripts.git

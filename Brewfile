@@ -19,6 +19,10 @@ cask "karabiner-elements"
 # Clipboard history
 cask "maccy"
 
+# Automation: redmi pad screenshot tool (vendor/macos_automation_scripts)
+cask "hammerspoon"
+cask "android-platform-tools"
+
 # IDE
 cask "visual-studio-code"
 
