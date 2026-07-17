@@ -31,7 +31,7 @@ cask "spotify"
 cask "ayugram"
 
 # vpn
-#cask "amneziavpn"
+cask "amneziavpn"
 
 # controls
 cask "linearmouse"
