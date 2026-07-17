@@ -33,3 +33,6 @@ cask "amneziavpn"
 # controls
 cask "linearmouse"
 
+# dictionary / translation
+cask "easydict"
+
