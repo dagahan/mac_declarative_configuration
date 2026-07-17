@@ -36,3 +36,6 @@ cask "linearmouse"
 # dictionary / translation
 cask "easydict"
 
+# password manager
+cask "bitwarden"
+
