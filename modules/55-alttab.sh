@@ -22,7 +22,6 @@ if [[ -d /Applications/Xcode.app ]]; then
         codesign -f -s mac-setup-codesign --deep /Applications/AltTab.app
         echo "$head" > "$stamp"
         log "installed fork build"
-        warn "ad-hoc signature changed — re-grant Accessibility + Screen Recording to AltTab when macOS asks"
     else
         log "AltTab build up to date (${head:0:8})"
     fi
