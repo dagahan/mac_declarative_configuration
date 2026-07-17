@@ -1,10 +1,7 @@
-tap "FelixKratz/formulae"
-
 # CLI
 brew "git"
 brew "bash"
 brew "xcodegen"
-brew "sketchybar"
 brew "uv"
 
 # Window manager and switcher are built from vendor/ forks (modules 30, 55)

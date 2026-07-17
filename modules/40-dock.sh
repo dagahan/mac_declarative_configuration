@@ -10,5 +10,10 @@ defaults write com.apple.dock show-recents -bool false
 defaults write com.apple.dock persistent-apps -array
 defaults write com.apple.dock persistent-others -array
 
+log "disabling Dock jump/bounce animations"
+defaults write com.apple.dock launchanim -bool false
+defaults write com.apple.dock mineffect -string "scale"
+defaults write com.apple.dock expose-animation-duration -float 0
+
 killall Dock
 log "Dock restarted"
