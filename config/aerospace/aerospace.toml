@@ -136,7 +136,6 @@ gaps.outer.right =      0
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
     alt-0 = 'workspace 0'
-    cmd-0 = 'workspace 0'
     alt-1 = 'workspace 1'
     alt-2 = 'workspace 2'
     alt-3 = 'workspace 3'

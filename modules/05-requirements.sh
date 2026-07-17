@@ -4,6 +4,17 @@ source "$(dirname "$0")/lib.sh"
 
 xcode-select -p >/dev/null 2>&1 || { log "installing Command Line Tools"; xcode-select --install; }
 
+if ! /usr/bin/pgrep -q oahd; then
+    log "installing Rosetta 2 (needed by x86-only apps like AmneziaVPN)"
+    if sudo -n true 2>/dev/null; then
+        sudo softwareupdate --install-rosetta --agree-to-license
+    elif [[ -n "${SUDO_ASKPASS:-}" ]]; then
+        sudo -A softwareupdate --install-rosetta --agree-to-license
+    else
+        warn "no sudo available — run: sudo softwareupdate --install-rosetta --agree-to-license"
+    fi
+fi
+
 if ! security find-identity -p codesigning 2>/dev/null | grep -q mac-setup-codesign; then
     log "creating mac-setup-codesign certificate (stable identity keeps TCC grants across rebuilds)"
     tmp="$(mktemp -d)"
