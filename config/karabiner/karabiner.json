@@ -23,6 +23,22 @@
                         ]
                     },
                     {
+                        "description": "Cmd+W quits AyuGram on any workspace (it hides to tray otherwise)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "conditions": [
+                                    { "type": "frontmost_application_if", "bundle_identifiers": ["^one\\.ayugram\\.AyuGramDesktop$"] }
+                                ],
+                                "from": {
+                                    "key_code": "w",
+                                    "modifiers": { "mandatory": ["command"] }
+                                },
+                                "to": [{ "key_code": "q", "modifiers": ["command"] }]
+                            }
+                        ]
+                    },
+                    {
                         "description": "Cmd+W quits the app on tiling workspaces (kills tray-hiders for real)",
                         "manipulators": [
                             {

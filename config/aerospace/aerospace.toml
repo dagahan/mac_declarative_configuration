@@ -51,10 +51,10 @@ automatically-unhide-macos-hidden-apps = false
 # List of workspaces that should stay alive even when they contain no windows,
 # even when they are invisible.
 # This config option is only available since 'config-version = 2'
-# Fallback value (if you omit the key): persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+# Fallback value (if you omit the key): persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
-floating-workspaces = ["1"]
+floating-workspaces = ["0", "1"]
 
 # A callback that runs every time binding mode changes
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -132,6 +132,8 @@ gaps.outer.right =      0
     alt-equal = 'resize smart +50'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
+    alt-0 = 'workspace 0'
+    cmd-0 = 'workspace 0'
     alt-1 = 'workspace 1'
     alt-2 = 'workspace 2'
     alt-3 = 'workspace 3'
@@ -143,6 +145,7 @@ gaps.outer.right =      0
     alt-9 = 'workspace 9'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
+    alt-shift-0 = 'move-node-to-workspace 0'
     alt-shift-1 = 'move-node-to-workspace 1'
     alt-shift-2 = 'move-node-to-workspace 2'
     alt-shift-3 = 'move-node-to-workspace 3'
@@ -176,6 +179,7 @@ gaps.outer.right =      0
     alt-shift-l = ['join-with right', 'mode main']
 
 [mode.floating.binding]
+    alt-shift-0 = 'move-node-to-workspace 0'
     alt-shift-1 = 'move-node-to-workspace 1'
     alt-shift-2 = 'move-node-to-workspace 2'
     alt-shift-3 = 'move-node-to-workspace 3'
@@ -185,6 +189,8 @@ gaps.outer.right =      0
     alt-shift-7 = 'move-node-to-workspace 7'
     alt-shift-8 = 'move-node-to-workspace 8'
     alt-shift-9 = 'move-node-to-workspace 9'
+    alt-0 = 'workspace 0'
+    cmd-0 = 'workspace 0'
     alt-1 = 'workspace 1'
     alt-2 = 'workspace 2'
     alt-3 = 'workspace 3'
