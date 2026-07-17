@@ -22,22 +22,15 @@ open -g "/Applications/Hammerspoon.app" 2>/dev/null || true
 pgrep -qx Karabiner-Menu && { pkill -x Karabiner-Menu; sleep 1; }
 open -g "/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Menu.app" 2>/dev/null || true
 
-if [[ ! -d /Applications/Ice.app ]]; then
-    warn "Ice missing — run module 10 first"
-else
-    log "launching Ice (covers Spotlight/Control-Center icons macOS won't let apps hide directly)"
-    open -g -a Ice 2>/dev/null || true
-fi
-
 log "menu bar icons hidden (Karabiner's toggle lives in config/karabiner/karabiner.json: global.show_in_menu_bar)"
 cat <<'EOF'
 Two icons need a one-time manual step — their tray setting lives in a file
 this script won't touch (Bitwarden's vault store, AyuGram's encrypted
-session data), or macOS itself blocks scripting it (Spotlight):
+session data):
   - Bitwarden > Settings > General > "Enable menu bar icon" (off)
     [already captured — see module 49]
   - AyuGram > Settings > Advanced > "Show icon in the menu bar" (off)
-  - Spotlight: open Ice.app once, drag the search icon into its hidden
-    section (System Settings > Control Center can't remove it; Ice can
-    only cover it).
+
+Spotlight's own menu-bar icon cannot be hidden by any script or app since
+macOS Mojave — it's compiled into the system. No entry here for it.
 EOF
