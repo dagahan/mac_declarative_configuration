@@ -10,22 +10,6 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Cmd+Tab -> nothing on tiling workspaces (AltTab handles it on floating workspaces)",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "conditions": [
-                                    { "type": "variable_if", "name": "aerospace_tiling", "value": 1 }
-                                ],
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": { "mandatory": ["command"], "optional": ["any"] }
-                                },
-                                "to": [{ "key_code": "vk_none" }]
-                            }
-                        ]
-                    },
-                    {
                         "description": "Disable Mission Control key (F3, both event forms)",
                         "manipulators": [
                             {

@@ -14,7 +14,6 @@ cask "font-jetbrains-mono-nerd-font"
 cask "karabiner-elements"
 
 # Clipboard history
-cask "maccy"
 
 # Automation: redmi pad screenshot tool (vendor/macos_automation_scripts)
 cask "hammerspoon"

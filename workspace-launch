@@ -27,8 +27,7 @@ for _ in {1..12}; do
 done
 if aerospace list-workspaces --focused >/dev/null 2>&1; then
     aerospace reload-config
-    "$HOME/mac_setup/config/aerospace/workspace-hook.sh" "$(aerospace list-workspaces --focused)"
-    log "aerospace config + workspace hook"
+    log "aerospace config reloaded"
 else
     warn "AeroSpace server unreachable — grant Accessibility, then rerun mac-workspace-launch"
 fi
@@ -36,9 +35,7 @@ fi
 restart_app AltTab
 restart_app LinearMouse
 restart_app Easydict
-restart_app Maccy
 restart_app Hammerspoon /Applications/Hammerspoon.app
-restart_app Bitwarden
 
 killall Dock 2>/dev/null
 log "Dock"

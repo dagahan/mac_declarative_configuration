@@ -6,12 +6,6 @@
 # Fallback value (if you omit the key): config-version = 1
 config-version = 2
 
-# You can use it to add commands that run after AeroSpace startup.
-# Available commands : https://nikitabobko.github.io/AeroSpace/commands
-after-startup-command = ['exec-and-forget $HOME/mac_setup/config/aerospace/workspace-hook.sh']
-
-exec-on-workspace-change = ['/bin/zsh', '-c', '$HOME/mac_setup/config/aerospace/workspace-hook.sh $AEROSPACE_FOCUSED_WORKSPACE']
-
 # Start AeroSpace at login
 start-at-login = false
 
