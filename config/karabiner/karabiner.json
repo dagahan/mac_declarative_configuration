@@ -7,7 +7,7 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Cmd+Tab -> nothing on tiling workspaces (AltTab handles it on workspace 1)",
+                        "description": "Cmd+Tab -> nothing on tiling workspaces (AltTab handles it on floating workspaces)",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -19,38 +19,6 @@
                                     "modifiers": { "mandatory": ["command"], "optional": ["any"] }
                                 },
                                 "to": [{ "key_code": "vk_none" }]
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Cmd+W quits AyuGram on any workspace (it hides to tray otherwise)",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "conditions": [
-                                    { "type": "frontmost_application_if", "bundle_identifiers": ["^one\\.ayugram\\.AyuGramDesktop$"] }
-                                ],
-                                "from": {
-                                    "key_code": "w",
-                                    "modifiers": { "mandatory": ["command"] }
-                                },
-                                "to": [{ "key_code": "q", "modifiers": ["command"] }]
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Cmd+W quits the app on tiling workspaces (kills tray-hiders for real)",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "conditions": [
-                                    { "type": "variable_if", "name": "aerospace_tiling", "value": 1 }
-                                ],
-                                "from": {
-                                    "key_code": "w",
-                                    "modifiers": { "mandatory": ["command"] }
-                                },
-                                "to": [{ "key_code": "q", "modifiers": ["command"] }]
                             }
                         ]
                     },

@@ -7,3 +7,4 @@ source "$ZSH/oh-my-zsh.sh"
 
 alias cls='clear'
 alias la='ls -a'
+alias mac-sync="$HOME/mac_setup/sync"
