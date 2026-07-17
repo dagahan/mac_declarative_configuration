@@ -36,6 +36,10 @@ cask "linearmouse"
 # dictionary / translation
 cask "easydict"
 
+# menu bar manager (Spotlight's own icon can't be hidden by macOS itself anymore;
+# Ice covers/collapses it instead)
+cask "jordanbaird-ice"
+
 # password manager
 cask "bitwarden"
 
