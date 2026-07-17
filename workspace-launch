@@ -1,0 +1,46 @@
+#!/usr/bin/env zsh
+export PATH="/opt/homebrew/bin:$PATH"
+
+log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$*"; }
+
+restart_app() {
+    local proc="$1" target="${2:-$1}"
+    pgrep -qx "$proc" && { pkill -x "$proc"; sleep 1; }
+    if [[ "$target" == /* ]]; then
+        [[ -e "$target" ]] || { warn "$proc not installed — skipping"; return 0; }
+        open -g "$target"
+    else
+        open -g -a "$target" 2>/dev/null || warn "$proc not installed — skipping"
+    fi
+    log "$proc"
+}
+
+log "karabiner services"
+launchctl kickstart -k "gui/$(id -u)/org.pqrs.service.agent.karabiner_console_user_server" 2>/dev/null
+restart_app Karabiner-Menu "/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Menu.app"
+
+restart_app AeroSpace
+for _ in {1..12}; do
+    aerospace list-workspaces --focused >/dev/null 2>&1 && break
+    sleep 1
+done
+if aerospace list-workspaces --focused >/dev/null 2>&1; then
+    aerospace reload-config
+    "$HOME/mac_setup/config/aerospace/workspace-hook.sh" "$(aerospace list-workspaces --focused)"
+    log "aerospace config + workspace hook"
+else
+    warn "AeroSpace server unreachable — grant Accessibility, then rerun mac-workspace-launch"
+fi
+
+restart_app AltTab
+restart_app LinearMouse
+restart_app Easydict
+restart_app Maccy
+restart_app Hammerspoon /Applications/Hammerspoon.app
+restart_app Bitwarden
+
+killall Dock 2>/dev/null
+log "Dock"
+
+log "workspace up"

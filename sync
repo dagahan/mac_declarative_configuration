@@ -33,4 +33,8 @@ for module in modules/[0-9]*.sh; do
 done
 
 echo
+echo "───────── workspace-launch ─────────"
+zsh workspace-launch
+
+echo
 echo "All done."

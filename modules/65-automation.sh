@@ -10,16 +10,9 @@ command -v adb >/dev/null || { warn "adb missing — run module 10 first"; exit 
 log "installing redmi screenshot hotkey (ctrl+cmd+s via Hammerspoon)"
 zsh "$tool/install_hotkey.sh"
 
-if ! osascript -e 'tell application "System Events" to get name of every login item' 2>/dev/null | grep -q Hammerspoon; then
-    log "adding Hammerspoon to login items"
-    osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/Hammerspoon.app", hidden:true}' >/dev/null
-fi
-
-if ! pgrep -q Hammerspoon; then
-    log "launching Hammerspoon"
-    open -g /Applications/Hammerspoon.app
-    sleep 2
-    pgrep -q Hammerspoon || warn "Hammerspoon did not start"
+if osascript -e 'tell application "System Events" to get name of every login item' 2>/dev/null | grep -q Hammerspoon; then
+    log "removing Hammerspoon login item (startup happens via mac-workspace-launch)"
+    osascript -e 'tell application "System Events" to delete login item "Hammerspoon"' >/dev/null
 fi
 
 cat <<'EOF'

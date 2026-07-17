@@ -34,20 +34,4 @@ else
     warn "no Xcode — using existing AeroSpace.app; see module 05"
 fi
 
-if [[ ! -d /Applications/AeroSpace.app ]]; then
-    warn "AeroSpace.app missing"
-    exit 1
-fi
-
-log "launching AeroSpace"
-open -g -a AeroSpace
-
-for _ in {1..12}; do
-    if aerospace reload-config 2>/dev/null; then
-        log "config loaded: $(aerospace config --config-path)"
-        "$REPO_ROOT/config/aerospace/workspace-hook.sh" "$(aerospace list-workspaces --focused)"
-        exit 0
-    fi
-    sleep 1
-done
-warn "AeroSpace server unreachable — grant Accessibility permission, then rerun module 30"
+[[ -d /Applications/AeroSpace.app ]] || { warn "AeroSpace.app missing"; exit 1; }

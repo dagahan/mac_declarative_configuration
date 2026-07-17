@@ -19,5 +19,4 @@ with open(path, "w") as f:
     json.dump(d, f, indent=2, ensure_ascii=False)
 PYEOF
 
-open -g -a Bitwarden 2>/dev/null || true
-log "Bitwarden tray icon disabled"
+log "Bitwarden tray icon disabled (relaunch happens in workspace-launch)"

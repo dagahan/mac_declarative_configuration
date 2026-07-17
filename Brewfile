@@ -23,6 +23,11 @@ cask "android-platform-tools"
 # IDE
 cask "visual-studio-code"
 
+# Office
+cask "microsoft-word"
+cask "microsoft-excel"
+cask "microsoft-powerpoint"
+
 # Media
 cask "spotify"
 cask "ayugram"
@@ -39,3 +44,7 @@ cask "easydict"
 # password manager
 cask "bitwarden"
 
+# AI
+cask "claude"
+cask "chatgpt"
+brew "kimi-code"

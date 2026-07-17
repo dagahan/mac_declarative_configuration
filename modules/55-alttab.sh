@@ -29,14 +29,4 @@ else
     warn "no Xcode — using existing AltTab.app; see module 05"
 fi
 
-if [[ ! -d /Applications/AltTab.app ]]; then
-    warn "AltTab.app missing"
-    exit 1
-fi
-
-if ! pgrep -q AltTab; then
-    log "launching AltTab"
-    open -g -a AltTab
-    sleep 2
-    pgrep -q AltTab || warn "AltTab did not start — open it once manually and grant permissions"
-fi
+[[ -d /Applications/AltTab.app ]] || { warn "AltTab.app missing"; exit 1; }

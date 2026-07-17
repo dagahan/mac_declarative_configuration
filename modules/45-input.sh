@@ -10,6 +10,4 @@ log "trackpad: three-finger swipe up (Mission Control) off"
 defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerVertSwipeGesture -int 0
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerVertSwipeGesture -int 0
 defaults write com.apple.dock showMissionControlGestureEnabled -bool false
-
-killall Dock
 log "re-login required for key repeat to fully apply"
