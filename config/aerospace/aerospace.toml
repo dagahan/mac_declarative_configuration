@@ -50,6 +50,15 @@ persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 floating-workspaces = ["1"]
 
+# Fork animations (Omarchy-inspired, Apple curves; all respect the system Reduce Motion setting)
+animations-enabled = true
+# Accent-colored border around the focused window; pops in 87%->100% on new windows
+focused-border = true
+# Snapshot of a window shrinking away when alt-w destroys it
+close-animation = true
+# Transition when switching workspaces: off | fade | slide
+workspace-transition = 'fade'
+
 # A callback that runs every time binding mode changes
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 # See: https://nikitabobko.github.io/AeroSpace/commands#mode
