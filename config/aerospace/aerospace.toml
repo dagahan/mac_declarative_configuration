@@ -117,6 +117,8 @@ gaps.outer.right =      0
     alt-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
     cmd-q = 'close'
     alt-w = 'close --quit-if-last-window'
+    # Swallow cmd+m: minimize is banned on tiling workspaces
+    cmd-m = 'exec-and-forget true'
 
     alt-left = 'focus left'
     alt-down = 'focus down'
