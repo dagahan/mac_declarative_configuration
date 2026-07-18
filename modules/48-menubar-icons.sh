@@ -13,6 +13,8 @@ done
 # AltTab stores booleans as literal strings; a -bool write is discarded on launch.
 defaults write com.lwouis.alt-tab-macos menubarIconShown -string "false"
 defaults write com.lwouis.alt-tab-macos startAtLogin -string "false"
+# ShowHowPreference raw index: 1 = hide (ghost windowless apps otherwise show on every workspace)
+defaults write com.lwouis.alt-tab-macos showWindowlessApps -string "1"
 # LinearMouse JSON-encodes this enum: the value must contain literal quote bytes.
 defaults write com.lujjjh.LinearMouse menuBarVisibilityMode -string '"never"'
 defaults write org.hammerspoon.Hammerspoon MJShowMenuIconKey -bool false
