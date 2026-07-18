@@ -78,8 +78,8 @@ key-mapping.preset = 'qwerty'
 #                 Monitor pattern is the same as for 'workspace-to-monitor-force-assignment'.
 #                 See:
 #                 https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
-gaps.inner.horizontal = 0
-gaps.inner.vertical =   0
+gaps.inner.horizontal = 3
+gaps.inner.vertical =   3
 gaps.outer.left =       0
 gaps.outer.bottom =     0
 gaps.outer.top =        0
@@ -114,9 +114,19 @@ gaps.outer.right =      0
     # alt-enter = '''exec-and-forget osascript -e \
     # 'tell application "Terminal" to tell (do script) to activate' '''
 
-    cmd-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
+    alt-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
     cmd-q = 'close'
     alt-w = 'close --quit-if-last-window'
+
+    alt-left = 'focus left'
+    alt-down = 'focus down'
+    alt-up = 'focus up'
+    alt-right = 'focus right'
+
+    alt-shift-left = 'move left'
+    alt-shift-down = 'move down'
+    alt-shift-up = 'move up'
+    alt-shift-right = 'move right'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#layout
     alt-slash = 'layout tiles horizontal vertical'
@@ -191,7 +201,7 @@ gaps.outer.right =      0
     alt-shift-l = ['join-with right', 'mode main']
 
 [mode.floating.binding]
-    cmd-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
+    alt-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
     cmd-q = 'close'
     alt-w = 'close --quit-if-last-window'
     alt-shift-0 = 'move-node-to-workspace 0'
