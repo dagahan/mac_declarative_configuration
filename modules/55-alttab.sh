@@ -20,6 +20,9 @@ if [[ -d /Applications/Xcode.app ]]; then
         rm -rf /Applications/AltTab.app
         ditto "$app" /Applications/AltTab.app
         codesign -f -s mac-setup-codesign --deep /Applications/AltTab.app
+        # A leftover build-product .app shares the bundle id with the installed copy;
+        # LaunchServices/TCC then flip-flop between them and permission grants never stick.
+        rm -rf "$app"
         echo "$head" > "$stamp"
         log "installed fork build"
     else

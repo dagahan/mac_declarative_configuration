@@ -25,6 +25,9 @@ if [[ -d /Applications/Xcode.app ]]; then
         ditto "$app" /Applications/AeroSpace.app
         codesign -f -s mac-setup-codesign --deep /Applications/AeroSpace.app
         cp -f "$cli" /opt/homebrew/bin/aerospace
+        # A leftover build-product .app shares the bundle id with the installed copy;
+        # LaunchServices/TCC then flip-flop between them and permission grants never stick.
+        rm -rf "$app"
         echo "$head" > "$stamp"
         log "installed fork build (app + cli)"
     else
