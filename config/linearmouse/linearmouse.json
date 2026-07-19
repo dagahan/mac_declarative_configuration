@@ -19,20 +19,14 @@
           "vertical" : 1
         },
         "distance" : {
-          "vertical" : "auto"
+          "vertical" : "36px"
         },
         "reverse" : {
           "vertical" : true
         },
         "smoothed" : {
           "vertical" : {
-            "acceleration" : 0.36,
-            "bouncing" : true,
-            "enabled" : true,
-            "inertia" : 0.35,
-            "preset" : "easeIn",
-            "response" : 0.38,
-            "speed" : 0.9200000000000002048
+            "enabled" : false
           }
         },
         "speed" : {

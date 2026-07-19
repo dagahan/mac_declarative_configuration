@@ -10,19 +10,26 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Mission Control key (F3, both event forms) -> AeroSpace mission-control overlay",
+                        "description": "Disable Cmd+Q and Cmd+W (Cmd+Shift+Q still works)",
                         "manipulators": [
                             {
                                 "type": "basic",
-                                "from": { "apple_vendor_keyboard_key_code": "expose_all" },
-                                "to": [{ "shell_command": "/opt/homebrew/bin/aerospace mission-control" }]
+                                "from": { "key_code": "q", "modifiers": { "mandatory": ["command"] } },
+                                "to": []
                             },
                             {
                                 "type": "basic",
-                                "from": {
-                                    "key_code": "f3",
-                                    "modifiers": { "optional": ["any"] }
-                                },
+                                "from": { "key_code": "w", "modifiers": { "mandatory": ["command"] } },
+                                "to": []
+                            }
+                        ]
+                    },
+                    {
+                        "description": "F3 (plain press, no fn/modifiers) -> AeroSpace mission-control overlay",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f3" },
                                 "to": [{ "shell_command": "/opt/homebrew/bin/aerospace mission-control" }]
                             }
                         ]
