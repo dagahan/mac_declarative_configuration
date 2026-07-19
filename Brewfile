@@ -15,7 +15,7 @@ cask "karabiner-elements"
 
 # Clipboard history
 
-# Automation: redmi pad screenshot tool (vendor/macos_automation_scripts)
+# Automation: redmi pad screenshot tool (macos_automation_scripts)
 cask "hammerspoon"
 cask "android-platform-tools"
 
@@ -33,6 +33,17 @@ cask "ayugram"
 
 # vpn
 cask "amneziavpn"
+cask "logmein-hamachi"
+
+# java
+brew "openjdk@17"
+
+# cloud storage
+cask "google-drive"
+
+# editor: neovim itself is the nightly build (module 60); these are LazyVim picker deps
+brew "ripgrep"
+brew "fd"
 
 # controls
 cask "linearmouse"
