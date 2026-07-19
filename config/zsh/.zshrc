@@ -9,3 +9,4 @@ alias cls='clear'
 alias la='ls -a'
 alias mac-sync="$HOME/mac_setup/sync"
 alias mac-workspace-launch="$HOME/mac_setup/workspace-launch"
+alias mac-workspace-launch-force="$HOME/mac_setup/workspace-launch --force"
