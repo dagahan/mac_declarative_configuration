@@ -1,12 +1,13 @@
 #!/bin/bash
-# JankyBorders config: https://github.com/FelixKratz/JankyBorders
-# glow() reproduces the gaussian-blur halo the old fork BorderOverlay had.
+# JankyBorders stock example config: https://github.com/FelixKratz/JankyBorders
+# Width is toggled at runtime by the AeroSpace fork (BordersSync):
+# 0 on floating workspaces, 6.0 on tiling ones.
 options=(
     style=round
-    width=5.0
-    hidpi=on
-    active_color="glow(0xff007aff)"
-    inactive_color=0x00000000
+    width=6.0
+    hidpi=off
+    active_color=0xffe2e2e3
+    inactive_color=0xff414550
 )
 
 borders "${options[@]}"
