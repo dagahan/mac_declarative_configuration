@@ -45,7 +45,8 @@ brew "openjdk@17"
 # cloud storage
 cask "google-drive"
 
-# editor: neovim itself is the nightly build (module 60); these are LazyVim picker deps
+# editor (ripgrep/fd are LazyVim picker deps)
+brew "neovim"
 brew "ripgrep"
 brew "fd"
 
