@@ -2,3 +2,4 @@
 backups/
 *.pre-mac_setup
 .aerospace-build-stamp
+*-stamp

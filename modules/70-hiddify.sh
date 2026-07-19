@@ -4,7 +4,11 @@ source "$(dirname "$0")/lib.sh"
 
 repo="hiddify/hiddify-app"
 stamp="$REPO_ROOT/.hiddify-version-stamp"
-latest_tag="$(curl -sL "https://api.github.com/repos/$repo/releases/latest" | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')"
+latest_tag="$(curl -sL "https://api.github.com/repos/$repo/releases/latest" | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])' 2>/dev/null || true)"
+if [[ -z "$latest_tag" ]]; then
+    warn "GitHub API unavailable (rate limit?) — skipping Hiddify version check"
+    exit 0
+fi
 
 if [[ -d /Applications/Hiddify.app && "$latest_tag" == "$(cat "$stamp" 2>/dev/null)" ]]; then
     log "Hiddify up to date ($latest_tag)"

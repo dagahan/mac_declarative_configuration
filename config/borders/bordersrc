@@ -1,7 +1,8 @@
 #!/bin/bash
 # JankyBorders stock example config: https://github.com/FelixKratz/JankyBorders
-# Width is toggled at runtime by the AeroSpace fork (BordersSync):
-# 0 on floating workspaces, 6.0 on tiling ones.
+# Single source of truth for border options: the AeroSpace fork (BordersSync)
+# hides the border on floating workspaces (width=0.0) and restores it by
+# re-running this file against the live daemon.
 options=(
     style=round
     width=6.0
