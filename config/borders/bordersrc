@@ -1,0 +1,12 @@
+#!/bin/bash
+# JankyBorders config: https://github.com/FelixKratz/JankyBorders
+# glow() reproduces the gaussian-blur halo the old fork BorderOverlay had.
+options=(
+    style=round
+    width=5.0
+    hidpi=on
+    active_color="glow(0xff007aff)"
+    inactive_color=0x00000000
+)
+
+borders "${options[@]}"

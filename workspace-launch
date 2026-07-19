@@ -32,6 +32,14 @@ else
     warn "AeroSpace server unreachable — grant Accessibility, then rerun mac-workspace-launch"
 fi
 
+pkill -x borders 2>/dev/null
+if command -v borders >/dev/null && [[ -x "$HOME/.config/borders/bordersrc" ]]; then
+    "$HOME/.config/borders/bordersrc" &>/dev/null &!
+    log "borders"
+else
+    warn "borders not installed — skipping"
+fi
+
 restart_app AltTab
 restart_app LinearMouse
 restart_app Easydict
