@@ -24,36 +24,71 @@ restart_app() {
     log "$proc"
 }
 
+# start only if not already running — running apps pick up config changes themselves
+ensure_app() {
+    local proc="$1" target="${2:-$1}"
+    if pgrep -qx "$proc"; then
+        log "$proc already running"
+        return 0
+    fi
+    restart_app "$proc" "$target"
+}
+
+# restart only when a rebuild flagged it (or it's not running at all)
+flagged() {
+    local flag="/tmp/mac-setup-relaunch-$1"
+    [[ -f "$flag" ]] && { rm -f "$flag"; return 0; }
+    pgrep -qx "$1" || return 0
+    return 1
+}
+
 log "karabiner services"
 launchctl kickstart -k "gui/$(id -u)/org.pqrs.service.agent.karabiner_console_user_server" 2>/dev/null
-restart_app Karabiner-Menu "/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Menu.app"
+ensure_app Karabiner-Menu "/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Menu.app"
 
-restart_app AeroSpace
-for _ in {1..12}; do
-    aerospace list-workspaces --focused >/dev/null 2>&1 && break
-    sleep 1
-done
-if aerospace list-workspaces --focused >/dev/null 2>&1; then
-    aerospace reload-config
-    log "aerospace config reloaded"
+if flagged AeroSpace; then
+    prev_ws="$(aerospace list-workspaces --focused 2>/dev/null | head -1)"
+    restart_app AeroSpace
+    for _ in {1..12}; do
+        aerospace list-workspaces --focused >/dev/null 2>&1 && break
+        sleep 1
+    done
+    if aerospace list-workspaces --focused >/dev/null 2>&1; then
+        if [[ -n "${prev_ws:-}" && "$(aerospace list-workspaces --focused 2>/dev/null | head -1)" != "$prev_ws" ]]; then
+            aerospace workspace "$prev_ws" 2>/dev/null
+            log "refocused workspace $prev_ws"
+        fi
+    else
+        warn "AeroSpace server unreachable — grant Accessibility, then rerun mac-workspace-launch"
+    fi
 else
-    warn "AeroSpace server unreachable — grant Accessibility, then rerun mac-workspace-launch"
+    log "AeroSpace unchanged — not restarted"
 fi
+aerospace reload-config 2>/dev/null && log "aerospace config reloaded"
 
-pkill -x borders 2>/dev/null
 if command -v borders >/dev/null && [[ -x "$HOME/.config/borders/bordersrc" ]]; then
+    # running daemon absorbs the options; otherwise this becomes the daemon
     "$HOME/.config/borders/bordersrc" &>/dev/null &!
     log "borders"
 else
     warn "borders not installed — skipping"
 fi
 
-restart_app AltTab
-restart_app LinearMouse
-restart_app Easydict
-restart_app Hammerspoon /Applications/Hammerspoon.app
+if flagged AltTab; then
+    restart_app AltTab
+else
+    log "AltTab unchanged — not restarted"
+fi
+ensure_app LinearMouse
+ensure_app Easydict
+ensure_app Hammerspoon /Applications/Hammerspoon.app
 
-killall Dock 2>/dev/null
-log "Dock"
+if [[ -f /tmp/mac-setup-relaunch-Dock ]]; then
+    rm -f /tmp/mac-setup-relaunch-Dock
+    killall Dock 2>/dev/null
+    log "Dock"
+else
+    log "Dock unchanged — not restarted"
+fi
 
 log "workspace up"

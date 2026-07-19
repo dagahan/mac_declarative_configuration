@@ -29,6 +29,7 @@ if [[ -d /Applications/Xcode.app ]]; then
         # LaunchServices/TCC then flip-flop between them and permission grants never stick.
         rm -rf "$app"
         echo "$head" > "$stamp"
+        touch /tmp/mac-setup-relaunch-AeroSpace
         log "installed fork build (app + cli)"
     else
         log "AeroSpace build up to date (${head:0:8})"

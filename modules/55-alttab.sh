@@ -24,6 +24,7 @@ if [[ -d /Applications/Xcode.app ]]; then
         # LaunchServices/TCC then flip-flop between them and permission grants never stick.
         rm -rf "$app"
         echo "$head" > "$stamp"
+        touch /tmp/mac-setup-relaunch-AltTab
         log "installed fork build"
     else
         log "AltTab build up to date (${head:0:8})"

@@ -15,4 +15,5 @@ defaults write com.apple.dock launchanim -bool false
 defaults write com.apple.dock mineffect -string "scale"
 defaults write com.apple.dock expose-animation-duration -float 0
 defaults write com.apple.dock no-bouncing -bool true
+touch /tmp/mac-setup-relaunch-Dock
 log "Dock state declared (restart happens in workspace-launch)"
