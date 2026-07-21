@@ -14,12 +14,12 @@
                         "manipulators": [
                             {
                                 "type": "basic",
-                                "from": { "key_code": "q", "modifiers": { "mandatory": ["command"] } },
+                                "from": { "key_code": "q", "modifiers": { "mandatory": ["command"], "optional": ["caps_lock"] } },
                                 "to": []
                             },
                             {
                                 "type": "basic",
-                                "from": { "key_code": "w", "modifiers": { "mandatory": ["command"] } },
+                                "from": { "key_code": "w", "modifiers": { "mandatory": ["command"], "optional": ["caps_lock"] } },
                                 "to": []
                             }
                         ]
@@ -29,7 +29,18 @@
                         "manipulators": [
                             {
                                 "type": "basic",
-                                "from": { "key_code": "f3" },
+                                "from": {
+                                    "key_code": "f3",
+                                    "modifiers": { "optional": ["caps_lock"] }
+                                },
+                                "to": [{ "shell_command": "/opt/homebrew/bin/aerospace mission-control" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "mission_control",
+                                    "modifiers": { "optional": ["caps_lock", "fn"] }
+                                },
                                 "to": [{ "shell_command": "/opt/homebrew/bin/aerospace mission-control" }]
                             }
                         ]
