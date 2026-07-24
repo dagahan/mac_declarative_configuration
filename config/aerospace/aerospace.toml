@@ -50,6 +50,11 @@ persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 floating-workspaces = ["1"]
 
+# smart-open: apps that should switch to their existing window instead of opening a
+# new one, even if they expose a New Window menu item. (Single-instance apps like
+# Spotify are handled automatically — they have no New Window item — so they need no entry.)
+smart-open-single-window-apps = []
+
 # Fork animations (Omarchy-inspired, Apple curves; all respect the system Reduce Motion setting)
 animations-enabled = true
 # Focused-window border is drawn by JankyBorders (config/borders/bordersrc)
@@ -118,6 +123,8 @@ gaps.outer.right =      0
     alt-w = 'close --quit-if-last-window'
     # Swallow cmd+m: minimize is banned on tiling workspaces
     cmd-m = 'exec-and-forget true'
+    # smart-open: new Finder window here if running, else launch (Spotlight stays for search)
+    alt-shift-f = 'smart-open Finder'
 
     alt-left = 'focus left'
     alt-down = 'focus down'
