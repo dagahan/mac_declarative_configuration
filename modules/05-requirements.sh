@@ -36,6 +36,12 @@ EOF
     rm -rf "$tmp"
 fi
 
+# Rust toolchain for the Ainto launcher's core (module 58). Homebrew ships the
+# rustup manager; the stable toolchain itself is installed on first use here.
+if command -v rustup >/dev/null 2>&1; then
+    rustup show active-toolchain >/dev/null 2>&1 || { log "installing Rust stable toolchain"; rustup default stable; }
+fi
+
 if xcodebuild -version >/dev/null 2>&1; then
     log "full Xcode present: $(xcodebuild -version | head -1)"
 else

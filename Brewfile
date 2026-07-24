@@ -2,6 +2,7 @@ tap "FelixKratz/formulae"
 
 # CLI
 brew "git"
+brew "rustup"
 brew "bash"
 brew "xcodegen"
 brew "uv"
@@ -63,3 +64,5 @@ cask "bitwarden"
 cask "claude"
 cask "chatgpt"
 brew "kimi-code"
+
+cask "obsidian"

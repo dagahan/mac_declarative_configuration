@@ -9,3 +9,7 @@
 [submodule "vendor/macos_automation_scripts"]
 	path = vendor/macos_automation_scripts
 	url = git@github.com:dagahan/macos_automation_scripts.git
+[submodule "vendor/ainto-app"]
+	path = vendor/ainto-app
+	url = git@github.com:dagahan/ainto-app.git
+	branch = main

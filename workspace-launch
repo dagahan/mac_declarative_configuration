@@ -95,6 +95,12 @@ if flagged AltTab; then
 else
     log "AltTab unchanged — not restarted"
 fi
+
+if flagged Ainto; then
+    restart_app Ainto
+else
+    ensure_app Ainto
+fi
 ensure_app LinearMouse
 ensure_app Easydict
 ensure_app Hammerspoon /Applications/Hammerspoon.app
