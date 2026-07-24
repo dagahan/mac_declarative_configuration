@@ -20,11 +20,22 @@ restart_app() {
     fi
     if [[ "$target" == /* ]]; then
         [[ -e "$target" ]] || { warn "$proc not installed — skipping"; return 0; }
-        open -g "$target"
-    else
-        open -g -a "$target" 2>/dev/null || warn "$proc not installed — skipping"
+    elif ! open -Ra "$target" 2>/dev/null; then
+        warn "$proc not installed — skipping"
+        return 0
     fi
-    log "$proc"
+    # open -g returns success even when the app fails to stay up; verify and retry.
+    local open_arg; [[ "$target" == /* ]] && open_arg=("$target") || open_arg=(-a "$target")
+    for attempt in 1 2 3; do
+        open -g "${open_arg[@]}" 2>/dev/null
+        for _ in {1..15}; do
+            pgrep -qx "$proc" && { log "$proc"; return 0; }
+            sleep 0.2
+        done
+        warn "$proc didn't come up (attempt $attempt) — retrying"
+    done
+    warn "$proc failed to launch after 3 attempts"
+    return 1
 }
 
 # start only if not already running — running apps pick up config changes themselves
