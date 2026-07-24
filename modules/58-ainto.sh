@@ -51,21 +51,20 @@ fi
 
 # --- Declarative launcher prefs (applied whether or not a rebuild happened) ---
 
-# Ainto's global hotkey is stored in UserDefaults, not its TOML. Pin it to Cmd+Space.
-# (Written while Ainto is stopped so it isn't flushed back on quit.)
+# Ainto's global hotkey is stored in UserDefaults, not its TOML. Keep it on its
+# default Cmd+Shift+Space (no Spotlight conflict). Karabiner remaps Cmd+Space ->
+# Cmd+Shift+Space (config/karabiner/karabiner.json), intercepting Cmd+Space at the
+# driver level before Spotlight sees it — so Cmd+Space opens Ainto with no system
+# setting changes and no logout. (Written while Ainto is stopped so it isn't flushed
+# back on quit.)
 pgrep -qx Ainto && { pkill -x Ainto; sleep 1; }
-defaults write app.ainto.macos globalHotkey "⌘ Space"
+defaults write app.ainto.macos globalHotkey "⌘ ⇧ Space"
 
-# Free Cmd+Space so Ainto can register it: disable Spotlight's "Show Spotlight
-# search" symbolic hotkey (id 64). Fully reversible — re-enable with:
-#   defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 '{ enabled = 1; ... }'
+# Undo any earlier attempt to disable Spotlight's Cmd+Space symbolic hotkey (id 64):
+# the Karabiner interception makes that unnecessary, so leave Spotlight at default.
 plist="$HOME/Library/Preferences/com.apple.symbolichotkeys.plist"
-enabled="$(/usr/libexec/PlistBuddy -c "Print :AppleSymbolicHotKeys:64:enabled" "$plist" 2>/dev/null || echo missing)"
-if [[ "$enabled" != "false" ]]; then
-    log "disabling Spotlight's Cmd+Space (freeing it for Ainto — reversible)"
-    # -dict-add writes the whole entry, creating 64 if absent (Spotlight's default keycode/mods).
+if [[ "$(/usr/libexec/PlistBuddy -c "Print :AppleSymbolicHotKeys:64:enabled" "$plist" 2>/dev/null)" =~ ^(false|0)$ ]]; then
     defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 \
-        '{ enabled = 0; value = { parameters = (32, 49, 1048576); type = standard; }; }'
+        '{ enabled = 1; value = { parameters = (32, 49, 1048576); type = standard; }; }'
     /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u 2>/dev/null || true
-    warn "Cmd+Space may keep opening Spotlight until you log out/in once — macOS caches the hotkey table"
 fi

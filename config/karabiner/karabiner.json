@@ -25,6 +25,21 @@
                         ]
                     },
                     {
+                        "description": "Cmd+Space -> Ainto launcher (intercepted before Spotlight; emits Ainto's Cmd+Shift+Space hotkey)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "spacebar",
+                                    "modifiers": { "mandatory": ["command"], "optional": ["caps_lock"] }
+                                },
+                                "to": [
+                                    { "key_code": "spacebar", "modifiers": ["left_command", "left_shift"] }
+                                ]
+                            }
+                        ]
+                    },
+                    {
                         "description": "F3 (plain press, no fn/modifiers) -> AeroSpace mission-control overlay",
                         "manipulators": [
                             {
