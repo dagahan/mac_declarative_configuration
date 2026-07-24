@@ -12,4 +12,4 @@
 [submodule "vendor/ainto-app"]
 	path = vendor/ainto-app
 	url = git@github.com:dagahan/ainto-app.git
-	branch = main
+	branch = mac-setup
