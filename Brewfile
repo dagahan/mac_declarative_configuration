@@ -8,7 +8,7 @@ brew "xcodegen"
 brew "uv"
 brew "ffmpeg"
 
-# Window manager and switcher are built from vendor/ forks (modules 30, 55)
+# Window manager and switcher are built from vendor/ forks (aerospace, alttab units)
 # Focused-window outline (config/borders/bordersrc, started by the activate unit)
 brew "borders"
 
