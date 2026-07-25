@@ -11,33 +11,52 @@ describe() {
     print -r -- "${d:-$(target_of "$id")}"
 }
 
+# A selector is a unit name, or a resource-id glob when it contains a colon.
 select_ids() {
     SELECTED=()
     local id u
     if (( $# == 0 )); then SELECTED=("${ORDERED[@]}"); return; fi
     for u in "$@"; do
+        [[ "$u" == *:* ]] && continue
         unit_exists "$u" || die "unknown unit '$u' — try: mac list"
     done
     for id in "${ORDERED[@]}"; do
         for u in "$@"; do
-            if [[ "${R_UNIT[$id]}" == "$u" ]]; then SELECTED+=("$id"); break; fi
+            if [[ "$u" == *:* ]]; then
+                if [[ "$id" == ${~u} ]]; then SELECTED+=("$id"); break; fi
+            elif [[ "${R_UNIT[$id]}" == "$u" ]]; then
+                SELECTED+=("$id"); break
+            fi
         done
     done
+    (( ${#SELECTED} )) || die "nothing matched: $*"
 }
 
+_evaluate_one() {
+    local id=$1 rc
+    REASON=''
+    provider_call check "$id"; rc=$?
+    case $rc in
+        0) ST[$id]=ok ;;
+        1) ST[$id]=drift ;;
+        *) ST[$id]=unknown ;;
+    esac
+    RSN[$id]="$REASON"
+    journal "check $id ${ST[$id]} ${RSN[$id]}"
+}
+
+# Two passes: a stop resource asks whether the things it guards are in drift,
+# so it can only be judged once everything else has been.
 evaluate() {
-    local id rc
+    local id
     ST=(); RSN=(); SKIP=()
     for id in "${SELECTED[@]}"; do
-        REASON=''
-        provider_call check "$id"; rc=$?
-        case $rc in
-            0) ST[$id]=ok ;;
-            1) ST[$id]=drift ;;
-            *) ST[$id]=unknown ;;
-        esac
-        RSN[$id]="$REASON"
-        journal "check $id ${ST[$id]} ${RSN[$id]}"
+        [[ "${R_PROVIDER[$id]}" == stop ]] && continue
+        _evaluate_one "$id"
+    done
+    for id in "${SELECTED[@]}"; do
+        [[ "${R_PROVIDER[$id]}" == stop ]] || continue
+        _evaluate_one "$id"
     done
 }
 
@@ -264,6 +283,14 @@ cmd_prune() {
     done
     ledger_save
     return $rc
+}
+
+cmd_ack() {
+    local name=$1
+    [[ -n "$name" ]] || die "usage: mac ack <manual-step>"
+    mkdir -p "$STATE/ack"
+    date -u '+%Y-%m-%dT%H:%M:%SZ' > "$STATE/ack/$name"
+    print -r -- "$S_OK acknowledged '$name' — it will stop being reported"
 }
 
 cmd_forget() {

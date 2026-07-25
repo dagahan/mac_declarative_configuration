@@ -6,7 +6,11 @@ typeset -g LEDGER="$STATE/ledger.tsv"
 typeset -gi SCHEMA=1
 typeset -gA L_OWNED
 
-state_init() { mkdir -p "$STATE"/{before,journal,cache,artifacts} }
+state_init() { mkdir -p "$STATE"/{before,journal,cache,artifacts,pending-restart} }
+
+needs_restart()    { mkdir -p "$STATE/pending-restart"; touch "$STATE/pending-restart/$1" }
+restart_pending()  { [[ -f "$STATE/pending-restart/$1" ]] }
+restart_done()     { rm -f "$STATE/pending-restart/$1" }
 
 ledger_load() {
     L_OWNED=()

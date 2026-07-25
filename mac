@@ -51,6 +51,7 @@ case "$CMD" in
     log)     cmd_log     "${ARGV[@]}" ;;
     prune)   cmd_prune   "${ARGV[@]}" ;;
     forget)  cmd_forget  "${ARGV[@]}" ;;
+    ack)     cmd_ack     "${ARGV[@]}" ;;
     restart) zsh "$ROOT/workspace-launch" "${ARGV[@]}" ;;
     do)      [[ "${ARGV[1]:-}" == "pair-tablet" ]] \
                  && zsh "$ROOT/modules/90-interactive.sh" \

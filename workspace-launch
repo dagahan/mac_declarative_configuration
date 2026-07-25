@@ -59,7 +59,6 @@ flagged() {
 
 log "karabiner services"
 launchctl kickstart -k "gui/$(id -u)/org.pqrs.service.agent.karabiner_console_user_server" 2>/dev/null
-ensure_app Karabiner-Menu "/Library/Application Support/org.pqrs/Karabiner-Elements/Karabiner-Menu.app"
 
 if flagged AeroSpace; then
     prev_ws="$(aerospace list-workspaces --focused 2>/dev/null | head -1)"
@@ -90,27 +89,11 @@ else
     warn "borders not installed — skipping"
 fi
 
-if flagged AltTab; then
-    restart_app AltTab
-else
-    log "AltTab unchanged — not restarted"
-fi
-
 if flagged Ainto; then
     restart_app Ainto
 else
     ensure_app Ainto
 fi
-ensure_app LinearMouse
 ensure_app Easydict
-ensure_app Hammerspoon /Applications/Hammerspoon.app
-
-if [[ -f /tmp/mac-setup-relaunch-Dock ]] || (( force )); then
-    rm -f /tmp/mac-setup-relaunch-Dock
-    killall Dock 2>/dev/null
-    log "Dock"
-else
-    log "Dock unchanged — not restarted"
-fi
 
 log "workspace up"
