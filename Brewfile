@@ -6,6 +6,7 @@ brew "rustup"
 brew "bash"
 brew "xcodegen"
 brew "uv"
+brew "ffmpeg"
 
 # Window manager and switcher are built from vendor/ forks (modules 30, 55)
 # Focused-window outline (config/borders/bordersrc, started by workspace-launch)
@@ -62,6 +63,7 @@ cask "bitwarden"
 
 # AI
 cask "claude"
+cask "claude-code"
 cask "chatgpt"
 brew "kimi-code"
 
