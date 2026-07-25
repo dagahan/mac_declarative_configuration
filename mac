@@ -1,0 +1,60 @@
+#!/usr/bin/env zsh
+typeset -g ROOT="${0:A:h}"
+export PATH="/opt/homebrew/bin:$PATH"
+export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+
+source "$ROOT/engine/report.zsh"
+source "$ROOT/engine/core.zsh"
+source "$ROOT/engine/graph.zsh"
+source "$ROOT/engine/ledger.zsh"
+source "$ROOT/engine/cmd.zsh"
+for _p in "$ROOT"/providers/*.zsh(N); do source "$_p"; done
+
+usage() {
+    cat <<'EOF'
+usage: mac <command> [unit...] [-v]
+
+  check [unit...]     plan only — pure, offline, changes nothing
+  sync  [unit...]     converge the machine to the repo
+  restart [app]       activation phase alone
+  tree                the dependency graph
+  list                units and resource counts
+  explain <name>      everything known about a resource
+  log                 last run's journal
+  do <task>           one-shot tasks (pair-tablet)
+EOF
+}
+
+state_init
+ledger_load
+load_units
+
+typeset -a ARGV
+typeset -g CMD=''
+for _a in "$@"; do
+    case "$_a" in
+        -v|--verbose) VERBOSE=1 ;;
+        -y|--yes)     ASSUME_YES=1 ;;
+        -h|--help)    usage; exit 0 ;;
+        -*)           die "unknown flag: $_a" ;;
+        *)            if [[ -z "$CMD" ]]; then CMD=$_a; else ARGV+=("$_a"); fi ;;
+    esac
+done
+: ${CMD:=check}
+
+case "$CMD" in
+    check)   cmd_check   "${ARGV[@]}" ;;
+    sync)    cmd_sync    "${ARGV[@]}" ;;
+    tree)    cmd_tree    "${ARGV[@]}" ;;
+    list)    cmd_list    "${ARGV[@]}" ;;
+    explain) cmd_explain "${ARGV[@]}" ;;
+    log)     cmd_log     "${ARGV[@]}" ;;
+    prune)   cmd_prune   "${ARGV[@]}" ;;
+    forget)  cmd_forget  "${ARGV[@]}" ;;
+    restart) zsh "$ROOT/workspace-launch" "${ARGV[@]}" ;;
+    do)      [[ "${ARGV[1]:-}" == "pair-tablet" ]] \
+                 && zsh "$ROOT/modules/90-interactive.sh" \
+                 || die "unknown task '${ARGV[1]:-}' (have: pair-tablet)" ;;
+    help)    usage ;;
+    *)       die "unknown command '$CMD' — try: mac help" ;;
+esac
