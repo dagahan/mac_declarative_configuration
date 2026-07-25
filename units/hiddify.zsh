@@ -1,4 +1,3 @@
 requires=()
 
-run hiddify why="Hiddify from GitHub releases (becomes an app resource in phase 4)" \
-    check=always apply='zsh modules/70-hiddify.sh'
+app hiddify github=hiddify/hiddify-app asset=Hiddify-MacOS.dmg

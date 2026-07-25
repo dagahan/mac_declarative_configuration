@@ -7,6 +7,7 @@ source "$ROOT/engine/report.zsh"
 source "$ROOT/engine/core.zsh"
 source "$ROOT/engine/graph.zsh"
 source "$ROOT/engine/ledger.zsh"
+source "$ROOT/engine/applock.zsh"
 source "$ROOT/engine/cmd.zsh"
 for _p in "$ROOT"/providers/*.zsh(N); do source "$_p"; done
 
@@ -49,6 +50,7 @@ case "$CMD" in
     list)    cmd_list    "${ARGV[@]}" ;;
     explain) cmd_explain "${ARGV[@]}" ;;
     log)     cmd_log     "${ARGV[@]}" ;;
+    up)      cmd_up      "${ARGV[@]}" ;;
     prune)   cmd_prune   "${ARGV[@]}" ;;
     forget)  cmd_forget  "${ARGV[@]}" ;;
     ack)     cmd_ack     "${ARGV[@]}" ;;

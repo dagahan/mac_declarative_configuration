@@ -1,0 +1,9 @@
+{
+  "hiddify": {
+    "adopted": "2026-07-25",
+    "bundle": "app.hiddify.com",
+    "bundle_version": "4.1.1",
+    "path": "/Applications/Hiddify.app",
+    "teamid": ""
+  }
+}

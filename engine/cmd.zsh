@@ -307,3 +307,61 @@ cmd_log() {
     [[ -n "$last" ]] || { print -r -- "no runs recorded yet"; return 0 }
     cat "$last"
 }
+
+_app_up() {
+    local name=$1 url tag out sha stage staged team ver fmt kind pinned
+    if [[ -n "${P[github]:-}" ]]; then
+        out=$(gh_latest "${P[github]}" "${P[asset]:-}") || {
+            print -r -- "  $S_WARN $name — GitHub API unavailable (rate limit?), leaving apps.lock alone"; return 1 }
+        tag=${out%%$'\t'*}; url=${out#*$'\t'}
+    elif [[ -n "${P[url]:-}" ]]; then
+        url="${P[url]}"; tag="${P[version]:-pinned}"
+    else
+        print -r -- "  $S_BAD $name — needs url= or github="; return 1
+    fi
+    if [[ "$url" == "$(lock_get "$name" url)" ]]; then
+        print -r -- "  $S_OK $name already at $tag"; return 0
+    fi
+    print -r -- "  ${C_DIM}…${C_RESET} $name → $tag"
+    local file; file=$(_app_fetch "$url" "") || { print -r -- "  $S_BAD $name — $REASON"; return 1 }
+    sha=$(shasum -a 256 "$file" | cut -d' ' -f1)
+    fmt=$(_app_format)
+    stage="$STATE/cache/up-$name"
+    kind=$(_app_stage "$file" "$stage" "$fmt") || { print -r -- "  $S_BAD $name — $REASON"; return 1 }
+    if [[ "$kind" != pkg ]]; then
+        staged=$(find "$stage" -maxdepth 2 -name '*.app' -print -quit)
+        team=$(_app_teamid "$staged"); ver=$(_app_version "$staged")
+        pinned=$(lock_get "$name" teamid)
+        if [[ -n "$pinned" && -n "$team" && "$pinned" != "$team" ]]; then
+            print -r -- "  $S_BAD $name — publisher changed ($pinned → $team); refusing"
+            rm -rf "$stage"; return 1
+        fi
+        if [[ -z "$team" && "${P[trust]:-}" != unverified ]]; then
+            print -r -- "  $S_WARN $name is unsigned (no Team ID) — pinned by sha256 only"
+        fi
+    fi
+    rm -rf "$stage"
+    lock_set "$name" "version=$tag" "url=$url" "sha256=$sha" ${team:+"teamid=$team"} ${ver:+"upstream_version=$ver"}
+    print -r -- "  $S_OK $name $tag recorded in apps.lock — review the diff, then: mac sync"
+}
+
+cmd_up() {
+    lock_acquire
+    trap 'lock_release' EXIT INT TERM
+    journal_open up "$@"
+    build_graph; topo
+    local -a targets
+    local id name rc=0
+    for id in "${ORDERED[@]}"; do
+        [[ "${R_PROVIDER[$id]}" == app ]] || continue
+        name=${id#app:}
+        (( $# )) && [[ " $* " != *" $name "* ]] && continue
+        targets+=("$id")
+    done
+    (( ${#targets} )) || die "no external apps declared${1:+ matching '$*'}"
+    for id in "${targets[@]}"; do
+        parse_args "$id"
+        _app_up "${id#app:}" || rc=1
+    done
+    return $rc
+}
