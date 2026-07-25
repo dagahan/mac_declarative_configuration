@@ -1,4 +1,5 @@
 requires=()
 
-run ohmyzsh why="oh-my-zsh framework clone" \
-    check='[[ -d $HOME/.oh-my-zsh ]]' apply='zsh modules/15-ohmyzsh.sh'
+run ohmyzsh why="the zsh framework .zshrc sources; nothing else provides it" \
+    check='[[ -d "$HOME/.oh-my-zsh" ]]' \
+    apply='zsh recipes/ohmyzsh.zsh'

@@ -9,7 +9,7 @@ brew "uv"
 brew "ffmpeg"
 
 # Window manager and switcher are built from vendor/ forks (modules 30, 55)
-# Focused-window outline (config/borders/bordersrc, started by workspace-launch)
+# Focused-window outline (config/borders/bordersrc, started by the activate unit)
 brew "borders"
 
 # Terminal
