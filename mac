@@ -17,12 +17,19 @@ usage: mac <command> [unit...] [-v]
 
   check [unit...]     plan only — pure, offline, changes nothing
   sync  [unit...]     converge the machine to the repo
-  restart [app]       activation phase alone
-  tree                the dependency graph
-  list                units and resource counts
+  up    [app...]      move external apps forward, as an apps.lock diff
+  restart             activation pass alone
+  reload              re-read live configs (aerospace, kitty, karabiner)
+
+  tree | list         the dependency graph · units and counts
   explain <name>      everything known about a resource
+  scan | adopt <App>  find unmanaged apps · write a declaration for one
+  capture <domain>    learn a defaults declaration from the machine
+  lint                units must stay declarations only
+  prune | forget      revert what left the repo · drop ownership
+  ack <step>          retire a done manual step
   log                 last run's journal
-  do <task>           one-shot tasks (pair-tablet)
+  do pair-tablet      one-shot tasks
 EOF
 }
 
@@ -54,9 +61,14 @@ case "$CMD" in
     prune)   cmd_prune   "${ARGV[@]}" ;;
     forget)  cmd_forget  "${ARGV[@]}" ;;
     ack)     cmd_ack     "${ARGV[@]}" ;;
-    restart) zsh "$ROOT/workspace-launch" "${ARGV[@]}" ;;
+    restart) cmd_restart ;;
+    reload)  cmd_reload ;;
+    scan)    cmd_scan    "${ARGV[@]}" ;;
+    adopt)   cmd_adopt   "${ARGV[@]}" ;;
+    capture) cmd_capture "${ARGV[@]}" ;;
+    lint)    cmd_lint    "${ARGV[@]}" ;;
     do)      [[ "${ARGV[1]:-}" == "pair-tablet" ]] \
-                 && zsh "$ROOT/modules/90-interactive.sh" \
+                 && zsh "$ROOT/tasks/pair-tablet.zsh" \
                  || die "unknown task '${ARGV[1]:-}' (have: pair-tablet)" ;;
     help)    usage ;;
     *)       die "unknown command '$CMD' — try: mac help" ;;

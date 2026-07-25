@@ -365,3 +365,147 @@ cmd_up() {
     done
     return $rc
 }
+
+cmd_reload() { zsh "$ROOT/recipes/reload.zsh" }
+
+cmd_restart() { cmd_sync activate }
+
+# Everything in /Applications that no resource claims. The two ways state leaks
+# onto the machine — apps and defaults — are both instrumented, so the repo
+# cannot silently fall behind.
+_scan_key() { local k="${1//[[:space:]]/}"; k="${k%.app}"; k="${k:l}"; print -r -- "${k//[^a-z0-9]/}" }
+
+cmd_scan() {
+    build_graph; topo
+    local -A managed
+    local id name entry p
+    for id in "${R_IDS[@]}"; do
+        parse_args "$id"
+        case "${R_PROVIDER[$id]}" in
+            app)   p=$(lock_get "${id#app:}" path); [[ -n "$p" ]] && managed[$(_scan_key "${p:t}")]=1 ;;
+            build) managed[$(_scan_key "${${P[app]}:t}")]=1 ;;
+        esac
+    done
+    for name in ${(f)"$(python3 "$ROOT/engine/cask_apps.py" 2>/dev/null)"}; do
+        [[ -n "$name" ]] && managed[$name]=1
+    done
+    local -A ignored
+    if [[ -f "$ROOT/apps/ignore.txt" ]]; then
+        while read -r entry; do
+            entry=${entry%%\#*}
+            entry=$(_scan_key "$entry")
+            [[ -n "$entry" ]] && ignored[$entry]=1
+        done < "$ROOT/apps/ignore.txt"
+    fi
+    local -a unknown
+    for p in /Applications/*.app(N); do
+        name=${p:t}
+        entry=$(_scan_key "$name")
+        [[ -n "${managed[$entry]:-}" || -n "${ignored[$entry]:-}" ]] && continue
+        unknown+=("$name")
+    done
+    if (( ${#unknown} == 0 )); then
+        print -r -- "$S_OK every app in /Applications is declared or ignored"
+        return 0
+    fi
+    hdr "unmanaged in /Applications (${#unknown})"
+    for name in "${unknown[@]}"; do
+        printf '    %-34s %-30s %s\n' "$name" \
+            "$(defaults read "/Applications/$name/Contents/Info" CFBundleIdentifier 2>/dev/null)" \
+            "→ mac adopt ${name%.app}"
+    done
+    print -r -- ""
+    dim "    to leave one out for good, add it to apps/ignore.txt"
+    return 1
+}
+
+cmd_adopt() {
+    local want=$1 dest bundle ver team cask
+    [[ -n "$want" ]] || die "usage: mac adopt <App>"
+    dest="/Applications/${want%.app}.app"
+    [[ -d "$dest" ]] || die "not found: $dest"
+    bundle=$(defaults read "$dest/Contents/Info" CFBundleIdentifier 2>/dev/null)
+    ver=$(defaults read "$dest/Contents/Info" CFBundleShortVersionString 2>/dev/null)
+    team=$(codesign -dv --verbose=4 "$dest" 2>&1 | awk -F= '/^TeamIdentifier=/{print $2}')
+    # anchored: brew only honours regex inside slashes, and a fuzzy match would
+    # suggest a completely different app (structured -> structuredlogviewer)
+    cask=$(brew search --cask "/^${${want%.app}:l}\$/" 2>/dev/null | grep -v '^==>' | head -1)
+    print -r -- "  ${C_BOLD}${want%.app}${C_RESET}  $ver  ${C_DIM}$bundle${C_RESET}"
+    print -r -- ""
+    if [[ -n "$cask" ]]; then
+        print -r -- "  Homebrew has a cask — declare it in the Brewfile:"
+        print -r -- "      ${C_BOLD}cask \"$cask\"${C_RESET}"
+    else
+        print -r -- "  No cask upstream — add to apps/external.zsh:"
+        print -r -- "      ${C_BOLD}app ${${want%.app}:l} url='<download url>'${C_RESET}"
+        [[ "$team" == "not set" || -z "$team" ]] \
+            && dim "      (unsigned publisher — it will be pinned by sha256)" \
+            || dim "      (Team ID $team will be captured and enforced on updates)"
+    fi
+}
+
+# Declaring a setting has to be easier than clicking it, or the repo rots.
+cmd_capture() {
+    local domain=$1 before after key type value
+    [[ -n "$domain" ]] || die "usage: mac capture <domain>   (e.g. com.apple.dock)"
+    before=$(mktemp); after=$(mktemp)
+    defaults read "$domain" > "$before" 2>/dev/null
+    print -r -- "  snapshot of ${C_BOLD}$domain${C_RESET} taken"
+    print -r -- "  change the setting in System Settings, then press Enter"
+    read -r _
+    defaults read "$domain" > "$after" 2>/dev/null
+    local -a keys
+    keys=(${(f)"$(diff "$before" "$after" | grep '^>' | sed -E 's/^> *([A-Za-z0-9_.-]+) =.*/\1/' | sort -u)"})
+    rm -f "$before" "$after"
+    if (( ${#keys} == 0 )); then
+        print -r -- "  ${C_DIM}nothing changed in $domain${C_RESET}"
+        return 0
+    fi
+    hdr "add to the owning unit"
+    for key in "${keys[@]}"; do
+        [[ -n "$key" ]] || continue
+        type=$(defaults read-type "$domain" "$key" 2>/dev/null | sed 's/^Type is //')
+        value=$(defaults read "$domain" "$key" 2>/dev/null | tr '\n' ' ')
+        case $type in
+            boolean) type=bool; [[ "$value" == 1* ]] && value=true || value=false ;;
+            integer) type=int ;;
+            float)   type=float ;;
+            *)       type=string ;;
+        esac
+        print -r -- "    default $domain $key $type ${value% }"
+    done
+}
+
+# The one guardrail that keeps units from decaying back into shell scripts.
+cmd_lint() {
+    local f line n rc=0 id
+    local forbidden='^[[:space:]]*(defaults|pkill|killall|rm|curl|open|ditto|codesign|sudo|launchctl|mv|cp|ln|mkdir|installer|hdiutil|xattr|osascript|git|brew)[[:space:]]'
+    for f in "$ROOT"/units/*.zsh(N) "$ROOT"/apps/*.zsh(N); do
+        n=0
+        while IFS= read -r line; do
+            (( n++ ))
+            [[ "$line" == [[:space:]]#\#* ]] && continue
+            if [[ "$line" =~ $forbidden ]]; then
+                print -r -- "  $S_BAD ${f:t}:$n imperative command in a unit — move it into recipes/"
+                dim "      $line"
+                rc=1
+            fi
+        done < "$f"
+    done
+    local -a undocumented
+    for id in "${R_IDS[@]}"; do
+        [[ "${R_PROVIDER[$id]}" == run ]] || continue
+        parse_args "$id"
+        [[ -n "${P[why]:-}" ]] || undocumented+=("$id")
+    done
+    if (( ${#undocumented} )); then
+        for id in "${undocumented[@]}"; do
+            print -r -- "  $S_BAD $id — every run= escape hatch needs a why="
+        done
+        rc=1
+    fi
+    local -i escapes=0
+    for id in "${R_IDS[@]}"; do [[ "${R_PROVIDER[$id]}" == run ]] && (( escapes++ )); done
+    (( rc == 0 )) && print -r -- "$S_OK units are declarations only · ${escapes} run escape hatches, all documented"
+    return $rc
+}

@@ -1,8 +1,11 @@
 #!/usr/bin/env zsh
 set -euo pipefail
-source "$(dirname "$0")/lib.sh"
 
-[[ -t 0 ]] || { log "no terminal — skipping interactive setup"; exit 0; }
+REPO_ROOT="${0:A:h:h}"
+log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$*"; }
+
+[[ -t 0 ]] || { log "needs a terminal"; exit 0; }
 
 tool="$REPO_ROOT/vendor/macos_automation_scripts/redmi_pad_screenshot_to_clip_board"
 

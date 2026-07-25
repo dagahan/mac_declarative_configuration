@@ -1,5 +1,4 @@
 .DS_Store
 backups/
 *.pre-mac_setup
-.aerospace-build-stamp
-*-stamp
+apps.lock.bak
