@@ -1,4 +1,5 @@
 requires=(base brew)
 
-run alttab why="build AltTab fork, install app" \
-    check=always apply='zsh modules/55-alttab.sh'
+build alttab from=vendor/alt-tab-macos recipe=recipes/alttab.zsh \
+      artifact=DerivedData/Build/Products/Release/AltTab.app \
+      app=/Applications/AltTab.app proc=AltTab

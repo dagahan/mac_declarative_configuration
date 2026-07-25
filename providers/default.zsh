@@ -22,7 +22,9 @@ _def_norm() {
         bool)  case "${v:l}" in 1|true|yes) print -r -- 1 ;; *) print -r -- 0 ;; esac ;;
         int)   print -r -- "${v//[^0-9-]/}" ;;
         float) printf '%g\n' "$v" 2>/dev/null || print -r -- "$v" ;;
-        *)     print -r -- "$v" ;;
+        # Swift-based apps (Ainto) rewrite strings with \uXXXX escapes on quit;
+        # comparing raw bytes would report eternal drift and restart them forever.
+        *)     if [[ "$v" == *'\u'* ]]; then print -r -- "${(g::)v}"; else print -r -- "$v"; fi ;;
     esac
 }
 

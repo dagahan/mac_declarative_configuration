@@ -1,4 +1,7 @@
 requires=(base brew dotfiles)
 
-run aerospace why="build AeroSpace fork, install app + cli" \
-    check=always apply='zsh modules/30-aerospace.sh'
+build aerospace from=vendor/AeroSpace recipe=recipes/aerospace.zsh \
+      artifact=.xcbuild/Build/Products/Release/AeroSpace.app \
+      app=/Applications/AeroSpace.app \
+      also=.build/arm64-apple-macosx/release/aerospace:/opt/homebrew/bin/aerospace \
+      proc=AeroSpace
