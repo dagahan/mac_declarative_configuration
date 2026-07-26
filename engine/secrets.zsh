@@ -37,18 +37,26 @@ secret_unlock() {
 
     command -v bw >/dev/null || { REASON="bitwarden-cli not installed — run: mac sync brew"; return 1 }
 
-    local status; status=$(_secret_bw_status)
-    if [[ "$status" == unauthenticated ]]; then
-        bw login || { REASON="bitwarden login failed"; return 1 }
-        status=$(_secret_bw_status)
-    fi
-
-    local session
-    if [[ "$status" != unlocked ]]; then
-        session=$(bw unlock --raw) || { REASON="bitwarden unlock failed"; return 1 }
-    else
-        session="${BW_SESSION:-}"
-    fi
+    # Every branch has to end holding a session key. An unlocked vault is not
+    # enough: the key only ever comes back from login/unlock, so if the vault
+    # is already open and we were not the ones who opened it, we lock it and
+    # open it again rather than issuing keyless commands that quietly fail.
+    # NB: not named `status` — zsh reserves that as an alias for $?.
+    local bw_state session="${BW_SESSION:-}"
+    bw_state=$(_secret_bw_status)
+    case "$bw_state" in
+        unauthenticated)
+            session=$(bw login --raw) || { REASON="bitwarden login failed"; return 1 } ;;
+        locked)
+            session=$(bw unlock --raw) || { REASON="bitwarden unlock failed"; return 1 } ;;
+        unlocked)
+            if [[ -z "$session" ]]; then
+                bw lock >/dev/null 2>&1
+                session=$(bw unlock --raw) || { REASON="bitwarden unlock failed"; return 1 }
+            fi ;;
+        *) REASON="cannot talk to bitwarden-cli"; return 1 ;;
+    esac
+    [[ -n "$session" ]] || { REASON="bitwarden returned no session"; return 1 }
 
     bw sync --session "$session" >/dev/null 2>&1
     mkdir -p "${IDENTITY:h}"
