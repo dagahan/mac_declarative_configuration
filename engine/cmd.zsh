@@ -577,3 +577,26 @@ cmd_do() {
     print -r -- ""
     return 1
 }
+
+# A tree under private/ owns a command of its own name, so `mac vpn uri` runs
+# private/vpn/tasks/uri.zsh. Core dispatches by tree, and stays ignorant of
+# what any given tree is for.
+cmd_tree() {
+    local tree=$1; shift
+    local name=${1:-} f
+    if [[ -n "$name" && -f "$ROOT/private/$tree/tasks/$name.zsh" ]]; then
+        shift
+        ( cd "$ROOT" && zsh "$ROOT/private/$tree/tasks/$name.zsh" "$@" )
+        return $?
+    fi
+    [[ -n "$name" ]] && print -r -- "  $S_BAD no such $tree command: $name"
+    print -r -- ""
+    print -r -- "  ${C_BOLD}mac $tree${C_RESET}"
+    for f in "$ROOT/private/$tree"/tasks/*.zsh(N); do
+        printf '    %-10s %s\n' "${f:t:r}" "$(sed -n '2s/^# *//p' "$f")"
+    done
+    print -r -- ""
+    dim "    mac check $tree · mac sync $tree   the declaration itself"
+    print -r -- ""
+    return 1
+}

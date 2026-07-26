@@ -32,6 +32,7 @@ usage: mac <command> [unit...] [-v]
   ack <step>          retire a done manual step
   log                 last run's journal
   do [task]           one-shot tasks · no name lists them
+  vpn [command]       the tunnel · no name lists them
 EOF
 }
 
@@ -72,5 +73,9 @@ case "$CMD" in
     lint)    cmd_lint    "${ARGV[@]}" ;;
     do)      cmd_do      "${ARGV[@]}" ;;
     help)    usage ;;
-    *)       die "unknown command '$CMD' — try: mac help" ;;
+    *)       if [[ -n "$CMD" && -d "$ROOT/private/$CMD/tasks" ]]; then
+                 cmd_tree "$CMD" "${ARGV[@]}"
+             else
+                 die "unknown command '$CMD' — try: mac help"
+             fi ;;
 esac
