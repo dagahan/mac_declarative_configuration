@@ -31,7 +31,7 @@ usage: mac <command> [unit...] [-v]
   prune | forget      revert what left the repo · drop ownership
   ack <step>          retire a done manual step
   log                 last run's journal
-  do pair-tablet      one-shot tasks
+  do [task]           one-shot tasks · no name lists them
 EOF
 }
 
@@ -70,9 +70,7 @@ case "$CMD" in
     adopt)   cmd_adopt   "${ARGV[@]}" ;;
     capture) cmd_capture "${ARGV[@]}" ;;
     lint)    cmd_lint    "${ARGV[@]}" ;;
-    do)      [[ "${ARGV[1]:-}" == "pair-tablet" ]] \
-                 && zsh "$ROOT/tasks/pair-tablet.zsh" \
-                 || die "unknown task '${ARGV[1]:-}' (have: pair-tablet)" ;;
+    do)      cmd_do      "${ARGV[@]}" ;;
     help)    usage ;;
     *)       die "unknown command '$CMD' — try: mac help" ;;
 esac

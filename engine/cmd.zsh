@@ -550,3 +550,30 @@ cmd_lint() {
     (( rc == 0 )) && print -r -- "$S_OK units are declarations only · ${escapes} run escape hatches, all documented"
     return $rc
 }
+
+# Tasks are one-shot scripts, discovered rather than hardcoded, so a tree
+# added under private/ brings its own without the core knowing about it.
+_task_file() {
+    local f
+    for f in "$ROOT"/tasks/$1.zsh(N) "$ROOT"/private/*/tasks/$1.zsh(N); do
+        print -r -- "$f"; return 0
+    done
+    return 1
+}
+
+cmd_do() {
+    local name=${1:-} f
+    if [[ -n "$name" ]] && f=$(_task_file "$name"); then
+        shift
+        zsh "$f" "$@"
+        return $?
+    fi
+    [[ -n "$name" ]] && print -r -- "  $S_BAD no such task: $name"
+    print -r -- ""
+    print -r -- "  tasks"
+    for f in "$ROOT"/tasks/*.zsh(N) "$ROOT"/private/*/tasks/*.zsh(N); do
+        printf '    %-14s %s\n' "${f:t:r}" "$(sed -n '2s/^# *//p' "$f")"
+    done
+    print -r -- ""
+    return 1
+}
