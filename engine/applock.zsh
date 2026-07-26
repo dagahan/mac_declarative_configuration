@@ -42,8 +42,16 @@ PY
 gh_latest() {
     local repo=$1 pattern="${2:-}" tmp rc
     tmp=$(mktemp)
-    curl -fsSL "https://api.github.com/repos/$repo/releases/latest" -o "$tmp" 2>/dev/null || {
-        rm -f "$tmp"; return 1 }
+    # /releases/latest excludes pre-releases, so projects that only ship
+    # nightlies 404 there. Fall back to the full list and take the newest.
+    curl -fsSL "https://api.github.com/repos/$repo/releases/latest" -o "$tmp" 2>/dev/null \
+      || curl -fsSL "https://api.github.com/repos/$repo/releases?per_page=1" -o "$tmp" 2>/dev/null \
+      || { rm -f "$tmp"; return 1 }
+    python3 -c 'import json,sys
+d=json.load(open(sys.argv[1]))
+if isinstance(d, list):
+    if not d: sys.exit(1)
+    json.dump(d[0], open(sys.argv[1], "w"))' "$tmp" || { rm -f "$tmp"; return 1 }
     python3 "$ROOT/engine/gh_pick.py" "$tmp" "$pattern"
     rc=$?
     rm -f "$tmp"
