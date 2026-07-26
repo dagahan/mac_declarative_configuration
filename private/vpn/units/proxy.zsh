@@ -17,7 +17,14 @@ file undo-script from=private/vpn/config/undo-proxy.command \
 file olcrtc-plist from=private/vpn/config/launchd/olcrtc.plist.tmpl \
      at="$HOME/Library/LaunchAgents/com.mac-setup.olcrtc.plist"
 
+file singbox-plist from=private/vpn/config/launchd/singbox.plist.tmpl \
+     at="$HOME/Library/LaunchAgents/com.mac-setup.sing-box.plist"
+
 daemon olcrtc label=com.mac-setup.olcrtc after='file:olcrtc-plist'
+
+# Proxy on 127.0.0.1:2080 — a listener, nothing system-wide. Swapping
+# singbox-config to tun.json.tmpl and adding root= is what captures everything.
+daemon sing-box label=com.mac-setup.sing-box after='daemon:olcrtc'
 
 run server-config why="the far end must hold the same key and room; ssh is the only way to tell it" \
     check='zsh private/vpn/recipes/server-check.zsh' \
