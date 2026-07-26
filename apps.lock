@@ -9,15 +9,5 @@
     "upstream_version": "4.1.1",
     "url": "https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-MacOS.dmg",
     "version": "v4.1.1"
-  },
-  "olcbox": {
-    "bundle": "org.olcbox.app.desktopApp",
-    "bundle_version": "1.0.117",
-    "installed": "2026-07-26",
-    "path": "/Applications/Olcbox.app",
-    "sha256": "5467732a18c33aae5c0dad1162d789bc0d9b5024fa3992e3ee656956f8029283",
-    "upstream_version": "1.0.117",
-    "url": "https://github.com/alananisimov/olcbox/releases/download/nightly/Olcbox-1.0.117-macos-amd64.dmg",
-    "version": "nightly"
   }
 }

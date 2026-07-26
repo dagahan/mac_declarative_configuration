@@ -97,7 +97,7 @@ file_apply() {
 
     # The before-image records the destination as well as the prior state: by
     # the time we revert, the declaration is gone, so the id is all we have.
-    mkdir -p "${dst:h}" || { REASON="cannot create ${dst:h}"; return 1 }
+    [[ -n "${P[root]:-}" ]] || mkdir -p "${dst:h}" || { REASON="cannot create ${dst:h}"; return 1 }
     if ! before_exists "$id"; then
         if [[ -e "$dst" ]]; then
             cp -p "$dst" "$dst.pre-mac_setup" || { REASON="cannot back up $dst"; return 1 }
@@ -107,10 +107,22 @@ file_apply() {
         fi
     fi
 
-    tmp="${dst}.mac.$$"
+    # root= is for the few places only root may write, /Library/LaunchDaemons
+    # above all. Staged in /tmp first so a failed sudo cannot leave a half file.
+    tmp="${TMPDIR:-/tmp}/mac_file.$$"
     print -r -- "$content" > "$tmp" || { REASON="cannot write $tmp"; return 1 }
     chmod "$(_file_mode)" "$tmp" || { REASON="chmod failed"; rm -f "$tmp"; return 1 }
-    mv -f "$tmp" "$dst" || { REASON="install failed"; rm -f "$tmp"; return 1 }
+    if [[ -n "${P[root]:-}" ]]; then
+        if ! sudo -n true 2>/dev/null; then
+            rm -f "$tmp"; REASON="needs root — run 'sudo -v' then retry"; return 1
+        fi
+        sudo -n mkdir -p "${dst:h}" && sudo -n cp "$tmp" "$dst" \
+            && sudo -n chown root:wheel "$dst" && sudo -n chmod "$(_file_mode)" "$dst" \
+            || { rm -f "$tmp"; REASON="root install failed"; return 1 }
+        rm -f "$tmp"
+    else
+        mv -f "$tmp" "$dst" || { REASON="install failed"; rm -f "$tmp"; return 1 }
+    fi
 
     mkdir -p "$STATE/files"
     print -r -- "$(print -r -- "$content" | _file_sha) $(_file_source_fp)" > "$(_file_state "$id")"
