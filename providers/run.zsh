@@ -3,7 +3,13 @@ run_check() {
         REASON="${P[why]:-always runs}"
         return 1
     fi
-    if ( cd "$ROOT" && eval "${P[check]}" ) >/dev/null 2>&1; then return 0; fi
+    local secs="${P[timeout]:-30}" rc
+    with_timeout "$secs" "cd '$ROOT' && ${P[check]}" >/dev/null 2>&1; rc=$?
+    (( rc == 0 )) && return 0
+    if (( rc == TIMED_OUT )); then
+        REASON="gave up after ${secs}s: ${P[check]}"
+        return $TIMED_OUT
+    fi
     REASON="not satisfied: ${P[check]}"
     return 1
 }

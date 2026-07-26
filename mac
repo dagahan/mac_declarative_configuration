@@ -8,6 +8,7 @@ source "$ROOT/engine/core.zsh"
 source "$ROOT/engine/graph.zsh"
 source "$ROOT/engine/ledger.zsh"
 source "$ROOT/engine/applock.zsh"
+source "$ROOT/engine/secrets.zsh"
 source "$ROOT/engine/cmd.zsh"
 for _p in "$ROOT"/providers/*.zsh(N); do source "$_p"; done
 
@@ -26,6 +27,7 @@ usage: mac <command> [unit...] [-v]
   scan | adopt <App>  find unmanaged apps · write a declaration for one
   capture <domain>    learn a defaults declaration from the machine
   lint                units must stay declarations only
+  secret <add|get|list|rotate>   private values, encrypted in the repo
   prune | forget      revert what left the repo · drop ownership
   ack <step>          retire a done manual step
   log                 last run's journal
@@ -56,6 +58,7 @@ case "$CMD" in
     tree)    cmd_tree    "${ARGV[@]}" ;;
     list)    cmd_list    "${ARGV[@]}" ;;
     explain) cmd_explain "${ARGV[@]}" ;;
+    secret)  cmd_secret  "${ARGV[@]}" ;;
     log)     cmd_log     "${ARGV[@]}" ;;
     up)      cmd_up      "${ARGV[@]}" ;;
     prune)   cmd_prune   "${ARGV[@]}" ;;

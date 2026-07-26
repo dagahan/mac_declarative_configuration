@@ -1,0 +1,63 @@
+{
+  "log": {
+    "level": "warn"
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "remote",
+        "type": "https",
+        "server": "1.1.1.1",
+        "detour": "tunnel"
+      }
+    ],
+    "final": "remote",
+    "strategy": "ipv4_only"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "socks",
+      "tag": "tunnel",
+      "server": "127.0.0.1",
+      "server_port": 8808,
+      "version": "5"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "network": "udp",
+        "port": 443,
+        "action": "reject"
+      }
+    ],
+    "final": "tunnel",
+    "auto_detect_interface": true,
+    "default_domain_resolver": {
+      "server": "remote"
+    }
+  }
+}

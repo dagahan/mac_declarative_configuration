@@ -1,13 +1,23 @@
-# Stamps are content-addressed: submodule HEAD + uncommitted diff + the recipe
-# itself. Editing a source file rebuilds without committing first, and changing
-# build flags rebuilds too — both of which the old HEAD-only stamps missed.
+# A git tree id over the whole worktree — the same source always hashes the
+# same, whether or not it has been committed yet. Mixing in HEAD instead made
+# committing unchanged code look like a source change and forced a rebuild.
+# A scratch index keeps the real one untouched; `add -A` catches new files too.
+_build_tree() {
+    local dir="$ROOT/$1" idx tree
+    idx="${TMPDIR:-/tmp}/mac_setup-idx.$$"
+    rm -f "$idx"
+    tree=$( GIT_INDEX_FILE="$idx" git -C "$dir" add -A 2>/dev/null \
+            && GIT_INDEX_FILE="$idx" git -C "$dir" write-tree 2>/dev/null )
+    rm -f "$idx"
+    [[ -n "$tree" ]] && { print -r -- "$tree"; return 0 }
+    git -C "$dir" rev-parse "HEAD^{tree}" 2>/dev/null || print -r -- none
+}
+
 _build_fp() {
-    local dir="$ROOT/$1" recipe="$ROOT/$2"
-    local head dirty rec
-    head=$(git -C "$dir" rev-parse HEAD 2>/dev/null || print none)
-    dirty=$( { git -C "$dir" diff HEAD 2>/dev/null; git -C "$dir" status --porcelain 2>/dev/null } | shasum | cut -c1-12)
-    rec=$(shasum "$recipe" 2>/dev/null | cut -c1-12)
-    print -r -- "${head:0:12}.${dirty}.${rec}"
+    local tree rec
+    tree=$(_build_tree "$1")
+    rec=$(shasum "$ROOT/$2" 2>/dev/null | cut -c1-12)
+    print -r -- "${tree:0:12}.${rec}"
 }
 
 _build_stamp_file() { print -r -- "$STATE/builds/$1" }

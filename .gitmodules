@@ -13,3 +13,6 @@
 	path = vendor/ainto-app
 	url = git@github.com:dagahan/ainto-app.git
 	branch = mac-setup
+[submodule "vendor/olcrtc"]
+	path = vendor/olcrtc
+	url = https://github.com/openlibrecommunity/olcrtc.git

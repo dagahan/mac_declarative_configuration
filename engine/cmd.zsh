@@ -15,7 +15,13 @@ describe() {
 select_ids() {
     SELECTED=()
     local id u
-    if (( $# == 0 )); then SELECTED=("${ORDERED[@]}"); return; fi
+    if (( $# == 0 )); then
+        for id in "${ORDERED[@]}"; do
+            [[ -n "${U_OPTIN[${R_UNIT[$id]}]:-}" ]] && continue
+            SELECTED+=("$id")
+        done
+        return
+    fi
     for u in "$@"; do
         [[ "$u" == *:* ]] && continue
         unit_exists "$u" || die "unknown unit '$u' — try: mac list"
@@ -60,7 +66,23 @@ evaluate() {
     done
 }
 
+# "Declared and then removed" and "declared somewhere we cannot read" look
+# identical from the ledger: the unit file simply is not there. An uninitialised
+# submodule would therefore present a working setup as garbage to revert, so
+# while any tree is missing we decline to nominate anything at all.
+trees_incomplete() {
+    [[ -f "$ROOT/.gitmodules" ]] || return 1
+    local line sub
+    for line in ${(f)"$(git -C "$ROOT" config -f .gitmodules --get-regexp '^submodule\..*\.path$' 2>/dev/null)"}; do
+        sub="${line#* }"
+        [[ -n "$sub" && -d "$ROOT/$sub" ]] || continue
+        [[ -z "$(print -rl -- "$ROOT/$sub"/*(DN))" ]] && return 0
+    done
+    return 1
+}
+
 pending_reverts() {
+    trees_incomplete && return 0
     local id
     for id in "${(@k)L_OWNED}"; do
         [[ -n "${R_PROVIDER[$id]:-}" ]] || print -r -- "$id"
@@ -106,13 +128,23 @@ render_plan() {
         for id in "${revs[@]}"; do row "${id%%:*}" "$(target_of "$id")" "no longer declared"; done
     fi
     typeset -gi PLAN_CHANGES=$(( ${#drift} + ${#unknown} ))
+    typeset -gi PLAN_DRIFT=${#drift}
+    typeset -gi PLAN_UNKNOWN=${#unknown}
     typeset -gi PLAN_OK=$n_ok
     typeset -gi PLAN_MANUAL=${#manual_ids}
 }
 
+# The plan is a snapshot taken before anything ran, so a resource fed by one
+# applied earlier in the same pass was judged against reality that no longer
+# holds — it would sit at "ok" while its input changed underneath it, and only
+# a second sync would notice. Applying something re-checks whatever follows it.
 apply_all() {
-    local id
+    local id t
+    typeset -A DIRTY
     for id in "${SELECTED[@]}"; do
+        if [[ -n "${DIRTY[$id]:-}" && "${ST[$id]}" != drift ]]; then
+            _evaluate_one "$id"
+        fi
         [[ "${ST[$id]}" == drift ]] || continue
         [[ "${R_PROVIDER[$id]}" == manual ]] && continue
         if [[ -n "${SKIP[$id]:-}" ]]; then
@@ -125,6 +157,7 @@ apply_all() {
         if provider_call apply "$id"; then
             ST[$id]=changed
             ledger_claim "$id"
+            for t in ${=E_ORDER[$id]:-}; do DIRTY[$t]=1; done
             journal "apply $id ok"
         else
             ST[$id]=failed
@@ -179,7 +212,10 @@ cmd_check() {
         return 0
     fi
     print -r -- ""
-    print -r -- "  $PLAN_CHANGES change(s) · run ${C_BOLD}mac sync${C_RESET} to apply"
+    local summary=""
+    (( PLAN_DRIFT ))   && summary="$PLAN_DRIFT change(s)"
+    (( PLAN_UNKNOWN )) && summary="${summary:+$summary · }$PLAN_UNKNOWN unknown"
+    print -r -- "  $summary · run ${C_BOLD}mac sync${C_RESET} to apply"
     return 1
 }
 
@@ -265,6 +301,11 @@ cmd_prune() {
     journal_open prune
     build_graph; topo
     local -a revs; revs=($(pending_reverts))
+    if trees_incomplete; then
+        print -r -- "  $S_WARN a submodule is not checked out — refusing to revert anything"
+        dim  "    run: git submodule update --init --recursive"
+        return 1
+    fi
     if (( ${#revs} == 0 )); then print -r -- "$S_OK nothing to revert"; return 0; fi
     local id rc=0
     for id in "${revs[@]}"; do
@@ -436,7 +477,7 @@ cmd_adopt() {
         print -r -- "  Homebrew has a cask — declare it in the Brewfile:"
         print -r -- "      ${C_BOLD}cask \"$cask\"${C_RESET}"
     else
-        print -r -- "  No cask upstream — add to apps/external.zsh:"
+        print -r -- "  No cask upstream — add to units/apps.zsh:"
         print -r -- "      ${C_BOLD}app ${${want%.app}:l} url='<download url>'${C_RESET}"
         [[ "$team" == "not set" || -z "$team" ]] \
             && dim "      (unsigned publisher — it will be pinned by sha256)" \
@@ -480,7 +521,7 @@ cmd_capture() {
 cmd_lint() {
     local f line n rc=0 id
     local forbidden='^[[:space:]]*(defaults|pkill|killall|rm|curl|open|ditto|codesign|sudo|launchctl|mv|cp|ln|mkdir|installer|hdiutil|xattr|osascript|git|brew)[[:space:]]'
-    for f in "$ROOT"/units/*.zsh(N) "$ROOT"/apps/*.zsh(N); do
+    for f in "$ROOT"/units/*.zsh(N) "$ROOT"/private/*/units/*.zsh(N); do
         n=0
         while IFS= read -r line; do
             (( n++ ))

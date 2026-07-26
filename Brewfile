@@ -60,6 +60,12 @@ cask "easydict"
 
 # password manager
 cask "bitwarden"
+brew "bitwarden-cli"   # units/secrets.zsh: fetches the unlock key
+brew "age"             # units/secrets.zsh: encrypts config/secrets/*.locked
+
+# tunnel — private/vpn
+brew "go"              # builds olcrtc (needs 1.26.3+)
+brew "sing-box"
 
 # AI
 cask "claude"
