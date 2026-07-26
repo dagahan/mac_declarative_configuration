@@ -14,6 +14,17 @@ _daemon_plist()  {
 }
 _daemon_stamp() { print -r -- "$STATE/daemons/${1//[^a-zA-Z0-9._-]/_}" }
 
+# The plist plus every config the job actually reads. Without watch=, editing
+# a program's config would leave it running yesterday's settings, because the
+# plist never changed and nothing else here would notice.
+_daemon_fp() {
+    local f
+    {
+        shasum -a 256 "$(_daemon_plist)"
+        for f in ${=P[watch]:-}; do shasum -a 256 "${f/#\~/$HOME}" 2>/dev/null; done
+    } | shasum -a 256 | cut -d' ' -f1
+}
+
 _daemon_ctl() {
     if _daemon_root; then sudo -n launchctl "$@"; else launchctl "$@"; fi
 }
@@ -39,10 +50,10 @@ daemon_check() {
     (( rc == 1 )) && { REASON="loaded but not running"; return 1 }
 
     local want have
-    want=$(shasum -a 256 "$plist" | cut -d' ' -f1)
+    want=$(_daemon_fp)
     have=$(cat "$(_daemon_stamp "$id")" 2>/dev/null)
     [[ "$want" == "$have" ]] && return 0
-    REASON="definition changed since it was loaded"
+    REASON="definition or config changed since it was loaded"
     return 1
 }
 
@@ -58,7 +69,13 @@ daemon_apply() {
 
     before_exists "$id" || before_save "$id" "$dom/$label"
 
+    # bootout returns before the job is actually gone; bootstrapping into a
+    # domain that still holds the old label is refused outright.
     _daemon_ctl bootout "$dom/$label" 2>/dev/null
+    for i in {1..40}; do
+        _daemon_ctl print "$dom/$label" >/dev/null 2>&1 || break
+        sleep 0.25
+    done
     _daemon_ctl bootstrap "$dom" "$plist" 2>/dev/null \
         || { REASON="launchctl bootstrap refused $plist"; return 1 }
     _daemon_ctl kickstart -k "$dom/$label" 2>/dev/null
@@ -73,7 +90,7 @@ daemon_apply() {
     fi
 
     mkdir -p "$STATE/daemons"
-    shasum -a 256 "$plist" | cut -d' ' -f1 > "$(_daemon_stamp "$id")"
+    _daemon_fp > "$(_daemon_stamp "$id")"
     return 0
 }
 
