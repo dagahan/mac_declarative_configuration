@@ -16,3 +16,6 @@
 [submodule "vendor/olcrtc"]
 	path = vendor/olcrtc
 	url = https://github.com/openlibrecommunity/olcrtc.git
+[submodule "private/vpn"]
+	path = private/vpn
+	url = git@github.com:dagahan/mac_setup_vpn.git
