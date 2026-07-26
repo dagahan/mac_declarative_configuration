@@ -46,8 +46,21 @@ secret_unlock() {
     bw_state=$(_secret_bw_status)
     case "$bw_state" in
         unauthenticated)
+            dim  "    Bitwarden's command line keeps its own login, separate from the app,"
+            dim  "    so this is a first sign-in even though the app is already signed in."
+            print -r -- ""
+            print -r -- "  ${C_BOLD}Bitwarden will now ask you for:${C_RESET}"
+            print -r -- "    · your email address"
+            print -r -- "    · your master password  (hidden as you type)"
+            print -r -- "    · a one-time code, emailed to you, if this device is new"
+            print -r -- ""
+            dim  "    The prompts below are Bitwarden's own — mac_setup never sees any of it."
+            print -r -- ""
             session=$(bw login --raw) || { REASON="bitwarden login failed"; return 1 } ;;
         locked)
+            print -r -- "  ${C_BOLD}Your vault is locked — Bitwarden will ask for your master password.${C_RESET}"
+            dim  "    The prompt below is Bitwarden's own; mac_setup never sees it."
+            print -r -- ""
             session=$(bw unlock --raw) || { REASON="bitwarden unlock failed"; return 1 } ;;
         unlocked)
             if [[ -z "$session" ]]; then
