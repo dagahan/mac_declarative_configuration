@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+# pair the redmi tablet over wi-fi, for screenshots
 set -euo pipefail
 
 REPO_ROOT="${0:A:h:h}"
