@@ -20,7 +20,7 @@ usage: mac <command> [unit...] [-v]
   sync  [unit...]     converge the machine to the repo
   up    [app...]      move external apps forward, as an apps.lock diff
   restart             activation pass alone
-  reload              re-read live configs (aerospace, kitty, karabiner)
+  reload              start the desktop, then re-read its live configs
 
   tree | list         the dependency graph · units and counts
   explain <name>      everything known about a resource
@@ -30,7 +30,7 @@ usage: mac <command> [unit...] [-v]
   secret <add|get|list|rotate>   private values, encrypted in the repo
   prune | forget      revert what left the repo · drop ownership
   ack <step>          retire a done manual step
-  log                 last run's journal
+  log [-l|-f|<run>]   last run's journal · list · follow · one by name
   do [task]           one-shot tasks · no name lists them
   vpn [command]       the tunnel · no name lists them
 EOF
@@ -47,11 +47,14 @@ for _a in "$@"; do
         -v|--verbose) VERBOSE=1 ;;
         -y|--yes)     ASSUME_YES=1 ;;
         -h|--help)    usage; exit 0 ;;
-        -*)           die "unknown flag: $_a" ;;
+        -*)           [[ -z "$CMD" ]] && die "unknown flag: $_a"
+                      ARGV+=("$_a") ;;
         *)            if [[ -z "$CMD" ]]; then CMD=$_a; else ARGV+=("$_a"); fi ;;
     esac
 done
 : ${CMD:=check}
+
+journal_open "$CMD" "${ARGV[@]}"
 
 case "$CMD" in
     check)   cmd_check   "${ARGV[@]}" ;;
@@ -74,8 +77,11 @@ case "$CMD" in
     do)      cmd_do      "${ARGV[@]}" ;;
     help)    usage ;;
     *)       if [[ -n "$CMD" && -d "$ROOT/private/$CMD/tasks" ]]; then
-                 cmd_tree "$CMD" "${ARGV[@]}"
+                 cmd_private "$CMD" "${ARGV[@]}"
              else
                  die "unknown command '$CMD' — try: mac help"
              fi ;;
 esac
+_rc=$?
+journal_close $_rc
+exit $_rc

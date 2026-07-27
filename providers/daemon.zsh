@@ -8,7 +8,13 @@
 
 _daemon_root()   { [[ -n "${P[root]:-}" ]] }
 _daemon_domain() { _daemon_root && print -r -- "system" || print -r -- "gui/$UID" }
+
+# plist= keeps a job out of /Library/LaunchDaemons and ~/Library/LaunchAgents,
+# the two directories launchd scans on its own at boot and at login. A job
+# declared with an explicit path is loaded only when something bootstraps it,
+# so a reboot can never bring it back by itself.
 _daemon_plist()  {
+    if [[ -n "${P[plist]:-}" ]]; then print -r -- "${${P[plist]}/#\~/$HOME}"; return; fi
     _daemon_root && print -r -- "/Library/LaunchDaemons/${P[label]}.plist" \
                  || print -r -- "$HOME/Library/LaunchAgents/${P[label]}.plist"
 }
@@ -32,6 +38,9 @@ _daemon_ctl() {
 _daemon_running() {
     local out
     out=$(_daemon_ctl print "$(_daemon_domain)/${P[label]}" 2>/dev/null) || return 2
+    # An interval job spends almost all its life not running; for those, being
+    # loaded is the whole of what we can assert.
+    [[ -n "${P[periodic]:-}" ]] && return 0
     [[ "$out" == *"state = running"* ]] && return 0
     return 1
 }
@@ -40,9 +49,15 @@ daemon_check() {
     local id=$1 plist; plist=$(_daemon_plist)
     [[ -f "$plist" ]] || { REASON="no plist at $plist"; return 1 }
 
+    # Without a cached sudo we cannot ask launchd about a system job. For a
+    # long-running one the process itself is decent evidence; for an interval
+    # job there is no process to find between runs, so guessing "not running"
+    # would invent drift and re-apply something already loaded. Say unknown.
     if _daemon_root && ! sudo -n true 2>/dev/null; then
-        REASON="needs root to inspect — run 'sudo -v' then retry"
-        return $TIMED_OUT
+        [[ -n "${P[periodic]:-}" ]] && { REASON="needs your password to tell"; return 2 }
+        pgrep -qx "${P[label]##*.}" && return 0
+        REASON="not running"
+        return 1
     fi
 
     local rc; _daemon_running; rc=$?
@@ -63,8 +78,19 @@ daemon_apply() {
     [[ -f "$plist" ]] || { REASON="no plist at $plist"; return 1 }
 
     if _daemon_root && ! sudo -n true 2>/dev/null; then
-        REASON="needs root — run 'sudo -v' then retry"
+        REASON="root access expired mid-run"
         return 1
+    fi
+
+    # A guard is the difference between "start the job" and "start the job only
+    # if the thing it depends on is genuinely working". sing-box captures all
+    # routing the instant it loads; if its upstream proxy is dead, that is a
+    # total network outage rather than a failed unit.
+    if [[ -n "${P[guard]:-}" ]]; then
+        if ! eval "${P[guard]}" >/dev/null 2>&1; then
+            REASON="guard failed: ${P[guard]}"
+            return 1
+        fi
     fi
 
     before_exists "$id" || before_save "$id" "$dom/$label"

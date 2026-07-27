@@ -13,6 +13,8 @@ run borders why="focused-window outline daemon (JankyBorders)" \
     check='pgrep -qx borders' \
     apply='zsh recipes/borders.zsh'
 
-run aerospace-restart why="restart AeroSpace, preserving the focused workspace" \
-    check='! restart_pending AeroSpace' \
+# Liveness first, restart second. Checking only for a pending restart meant a
+# dead AeroSpace looked satisfied, so nothing ever started the window manager.
+run aerospace why="the window manager has to be running, and has to be restarted when its binary changes" \
+    check='pgrep -qx AeroSpace && ! restart_pending AeroSpace' \
     apply='zsh recipes/aerospace-restart.zsh && restart_done AeroSpace'

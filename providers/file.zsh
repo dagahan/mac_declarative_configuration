@@ -13,7 +13,10 @@ _file_dest() {
     print -r -- "${d/#\~/$HOME}"
 }
 
-_file_mode() { [[ -n "${P[sensitive]:-}" ]] && print -r -- 600 || print -r -- 644 }
+_file_mode() {
+    [[ -n "${P[mode]:-}" ]] && { print -r -- "${P[mode]}"; return }
+    [[ -n "${P[sensitive]:-}" ]] && print -r -- 600 || print -r -- 644
+}
 
 _file_state() {
     local key="${1//[^a-zA-Z0-9._-]/_}"
@@ -114,7 +117,7 @@ file_apply() {
     chmod "$(_file_mode)" "$tmp" || { REASON="chmod failed"; rm -f "$tmp"; return 1 }
     if [[ -n "${P[root]:-}" ]]; then
         if ! sudo -n true 2>/dev/null; then
-            rm -f "$tmp"; REASON="needs root — run 'sudo -v' then retry"; return 1
+            rm -f "$tmp"; REASON="root access expired mid-run"; return 1
         fi
         sudo -n mkdir -p "${dst:h}" && sudo -n cp "$tmp" "$dst" \
             && sudo -n chown root:wheel "$dst" && sudo -n chmod "$(_file_mode)" "$dst" \

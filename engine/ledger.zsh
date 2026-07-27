@@ -1,6 +1,7 @@
 # The ledger answers one question: "is this mine to touch, and what was here
 # before I arrived?" It is never asked what the machine currently looks like —
 # that always comes from a live probe.
+zmodload zsh/datetime
 typeset -g STATE="${XDG_STATE_HOME:-$HOME/.local/state}/mac_setup"
 typeset -g LEDGER="$STATE/ledger.tsv"
 typeset -gi SCHEMA=1
@@ -74,8 +75,34 @@ os_build_last()   { cat "$STATE/os_build" 2>/dev/null }
 os_build_record() { os_build_now > "$STATE/os_build" }
 os_name()         { print -r -- "macOS $(sw_vers -productVersion 2>/dev/null)" }
 
+# Every command gets a journal, not just the ones that change things — when
+# something goes wrong at 2am the question is always "what did I actually run",
+# and a command that leaves no trace cannot answer it. Idempotent, because the
+# entry point opens one and cmd_sync and friends still ask for their own.
 journal_open() {
-    typeset -g JOURNAL="$STATE/journal/$(date '+%Y%m%d-%H%M%S').log"
+    [[ -n "${JOURNAL:-}" ]] && return 0
+    mkdir -p "$STATE/journal"
+    # $$ included: two commands started in the same second would otherwise share
+    # a filename, and the second would truncate the first one's record.
+    typeset -g JOURNAL="$STATE/journal/$(date '+%Y%m%d-%H%M%S')-$$-${1:-run}.log"
+    typeset -gi JOURNAL_T0=$EPOCHSECONDS
     print -r -- "# mac $* @ $(date) $(os_name) $(os_build_now)" > "$JOURNAL"
+    journal_prune
 }
+
 journal() { [[ -n "${JOURNAL:-}" ]] && print -r -- "$@" >> "$JOURNAL" }
+
+journal_close() {
+    [[ -n "${JOURNAL:-}" ]] || return 0
+    print -r -- "# exit ${1:-0} after $(( EPOCHSECONDS - ${JOURNAL_T0:-EPOCHSECONDS} ))s" >> "$JOURNAL"
+}
+
+# Unbounded logs are their own failure mode.
+journal_prune() {
+    local -a old
+    old=("$STATE"/journal/*.log(Nm+30))
+    (( ${#old} )) && rm -f -- "${old[@]}"
+    old=("$STATE"/journal/*.log(Nom[201,-1]))
+    (( ${#old} )) && rm -f -- "${old[@]}"
+    return 0
+}

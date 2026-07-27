@@ -138,9 +138,52 @@ render_plan() {
 # applied earlier in the same pass was judged against reality that no longer
 # holds — it would sit at "ok" while its input changed underneath it, and only
 # a second sync would notice. Applying something re-checks whatever follows it.
+# Asking for the password is the engine's job, not a chore to hand back to the
+# person running it. Done once, up front, so a long sync cannot stall on a
+# prompt halfway through — and only when the plan actually contains something
+# root must write.
+_plan_wants_root() {
+    local id
+    for id in "${SELECTED[@]}"; do
+        [[ "${ST[$id]}" == drift ]] || continue
+        [[ "${R_PROVIDER[$id]}" == manual ]] && continue
+        parse_args "$id"
+        [[ -n "${P[root]:-}" ]] && return 0
+    done
+    return 1
+}
+
+# A `run` with no check, or check=always, is a deliberate "just do it" escape
+# hatch — it has no notion of being satisfied, so re-checking it would report
+# failure every single time. Everything else can and must be verified.
+_verifiable() {
+    local id=$1
+    [[ "${R_PROVIDER[$id]}" == manual ]] && return 1
+    if [[ "${R_PROVIDER[$id]}" == run ]]; then
+        parse_args "$id"
+        [[ -z "${P[check]:-}" || "${P[check]}" == always ]] && return 1
+    fi
+    return 0
+}
+
+sudo_ensure() {
+    sudo -n true 2>/dev/null && return 0
+    print -r -- ""
+    print -r -- "  ${C_BOLD}Some of this needs your password.${C_RESET}"
+    dim  "    Writing to /etc and /Library, and loading a system daemon."
+    print -r -- ""
+    sudo -v || return 1
+    print -r -- ""
+    return 0
+}
+
 apply_all() {
     local id t
     typeset -A DIRTY
+    if _plan_wants_root && ! sudo_ensure; then
+        print -r -- "  $S_BAD no password given — nothing was applied"
+        return 1
+    fi
     for id in "${SELECTED[@]}"; do
         if [[ -n "${DIRTY[$id]:-}" && "${ST[$id]}" != drift ]]; then
             _evaluate_one "$id"
@@ -155,6 +198,19 @@ apply_all() {
         REASON=''; LAST_OUTPUT=''
         print -r -- "  ${C_DIM}…${C_RESET} ${R_PROVIDER[$id]} $(target_of "$id")"
         if provider_call apply "$id"; then
+            # An exit code of 0 is a claim, not a result. Re-checking is the only
+            # thing standing between "it worked" and "it said it worked" — every
+            # provider already knows how to tell whether reality matches.
+            if _verifiable "$id"; then
+                REASON=''
+                if ! provider_call check "$id"; then
+                    ST[$id]=failed
+                    RSN[$id]="applied, but still not satisfied: ${REASON:-unchanged}"
+                    journal "verify $id FAILED ${RSN[$id]}"
+                    propagate_skip "$id" "$id"
+                    continue
+                fi
+            fi
             ST[$id]=changed
             ledger_claim "$id"
             for t in ${=E_ORDER[$id]:-}; do DIRTY[$t]=1; done
@@ -342,11 +398,33 @@ cmd_forget() {
     print -r -- "$S_OK forgot $id (machine untouched)"
 }
 
+# `mac log` alone is the last run. Everything else is for the case where the
+# interesting run was not the last one.
 cmd_log() {
-    local last
-    last=$(ls -t "$STATE/journal"/*.log 2>/dev/null | head -1)
-    [[ -n "$last" ]] || { print -r -- "no runs recorded yet"; return 0 }
-    cat "$last"
+    local -a logs
+    logs=("$STATE"/journal/*.log(Nom))
+    (( ${#logs} )) || { print -r -- "  no runs recorded yet"; return 0 }
+
+    case "${1:-}" in
+        -l|--list)
+            print -r -- ""
+            local f head
+            for f in "${logs[@]:0:${2:-20}}"; do
+                head=$(sed -n '1s/^# //p' "$f")
+                printf '    %-28s %s\n' "${f:t:r}" "${head%% @ *}"
+            done
+            print -r -- ""
+            dim  "    mac log <name>   one of these in full"
+            print -r -- ""
+            ;;
+        -f|--follow) tail -f "${logs[1]}" ;;
+        '')          cat "${logs[1]}" ;;
+        *)
+            local want="$STATE/journal/${1%.log}.log"
+            [[ -f "$want" ]] || die "no such run: $1  (mac log -l lists them)"
+            cat "$want"
+            ;;
+    esac
 }
 
 _app_up() {
@@ -407,7 +485,16 @@ cmd_up() {
     return $rc
 }
 
-cmd_reload() { zsh "$ROOT/recipes/reload.zsh" }
+# Bring the desktop up, then re-read the configs of what is now running.
+# Nothing starts at login, so this is the command that makes the machine
+# usable after a reboot.
+cmd_reload() {
+    cmd_sync activate
+    local rc=$?
+    print -r -- ""
+    zsh "$ROOT/recipes/reload.zsh"
+    return $rc
+}
 
 cmd_restart() { cmd_sync activate }
 
@@ -581,7 +668,7 @@ cmd_do() {
 # A tree under private/ owns a command of its own name, so `mac vpn uri` runs
 # private/vpn/tasks/uri.zsh. Core dispatches by tree, and stays ignorant of
 # what any given tree is for.
-cmd_tree() {
+cmd_private() {
     local tree=$1; shift
     local name=${1:-} f
     if [[ -n "$name" && -f "$ROOT/private/$tree/tasks/$name.zsh" ]]; then

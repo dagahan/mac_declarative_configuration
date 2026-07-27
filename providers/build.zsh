@@ -90,7 +90,9 @@ _build_prune_cache() {
 }
 
 build_revert() {
-    local id=$1 name=${id#build:} prev
+    local id=$1 name prev
+    name=${id#build:}
+    [[ -n "$name" ]] || { REASON="no name to revert"; return 1 }
     prev=$(before_get "$id")
     [[ "$prev" == app:* ]] && rm -rf "${prev#app:}"
     rm -f "$(_build_stamp_file "$name")"

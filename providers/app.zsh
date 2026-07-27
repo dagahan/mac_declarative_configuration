@@ -140,7 +140,8 @@ app_apply() {
 }
 
 app_revert() {
-    local id=$1 name=${id#app:} dest
+    local id=$1 name dest
+    name=${id#app:}
     dest=$(lock_get "$name" path)
     [[ -n "$dest" ]] || dest=$(before_get "$id" | sed 's/^path://')
     if [[ "$(lock_get "$name" format)" == pkg ]]; then

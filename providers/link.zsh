@@ -25,7 +25,10 @@ link_apply() {
 }
 
 link_revert() {
-    local id=$1 dst="${id#link:}" prev
+    # Separate statements: in zsh a later assignment in the same `local` cannot
+    # see an earlier one, so `local id=$1 dst="${id#link:}"` leaves dst empty.
+    local id=$1 prev dst
+    dst="${id#link:}"
     prev=$(before_get "$id")
     [[ -L "$dst" ]] && rm -f "$dst"
     [[ "$prev" == backup:* && -e "${prev#backup:}" ]] && mv "${prev#backup:}" "$dst"

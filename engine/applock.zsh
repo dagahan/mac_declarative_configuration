@@ -11,6 +11,9 @@ print(data.get(name, {}).get(field, ""))
 PY
 }
 
+# apps.lock is committed and is the whole reproducibility story, so it is
+# replaced atomically: a truncated file interrupted mid-write would lose every
+# pinned version at once.
 lock_set() {
     python3 - "$APPS_LOCK" "$@" <<'PY'
 import json, os, sys
@@ -20,9 +23,13 @@ entry = data.setdefault(name, {})
 for pair in sys.argv[3:]:
     key, _, value = pair.partition("=")
     entry[key] = value
-with open(path, "w") as f:
+tmp = path + ".tmp"
+with open(tmp, "w") as f:
     json.dump(data, f, indent=2, sort_keys=True)
     f.write("\n")
+    f.flush()
+    os.fsync(f.fileno())
+os.replace(tmp, path)
 PY
 }
 
@@ -32,9 +39,13 @@ import json, os, sys
 path, name = sys.argv[1:3]
 data = json.load(open(path)) if os.path.exists(path) else {}
 data.pop(name, None)
-with open(path, "w") as f:
+tmp = path + ".tmp"
+with open(tmp, "w") as f:
     json.dump(data, f, indent=2, sort_keys=True)
     f.write("\n")
+    f.flush()
+    os.fsync(f.fileno())
+os.replace(tmp, path)
 PY
 }
 

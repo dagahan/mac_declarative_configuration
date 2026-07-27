@@ -9,7 +9,11 @@ typeset -g S_SKIP="${C_DIM}⊘${C_RESET}" S_WARN="${C_YEL}⚠${C_RESET}" S_DOT="
 
 say()  { print -r -- "$@" }
 warn() { print -ru2 -- "${C_YEL}warning:${C_RESET} $*" }
-die()  { print -ru2 -- "${C_RED}error:${C_RESET} $*"; exit 2 }
+die()  {
+    print -ru2 -- "${C_RED}error:${C_RESET} $*"
+    (( ${+functions[journal]} )) && { journal "FATAL $*"; journal_close 2 }
+    exit 2
+}
 hdr()  { print -r -- ""; print -r -- "  ${C_BOLD}$*${C_RESET}" }
 dim()  { print -r -- "${C_DIM}$*${C_RESET}" }
 
