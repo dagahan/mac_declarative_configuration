@@ -86,8 +86,11 @@ daemon_apply() {
     # if the thing it depends on is genuinely working". sing-box captures all
     # routing the instant it loads; if its upstream proxy is dead, that is a
     # total network outage rather than a failed unit.
+    # From $ROOT, like the run provider: a guard written against repo-relative
+    # paths would otherwise fail purely because of where you happened to be
+    # standing when you typed the command.
     if [[ -n "${P[guard]:-}" ]]; then
-        if ! eval "${P[guard]}" >/dev/null 2>&1; then
+        if ! ( cd "$ROOT" && eval "${P[guard]}" ) >/dev/null 2>&1; then
             REASON="guard failed: ${P[guard]}"
             return 1
         fi
