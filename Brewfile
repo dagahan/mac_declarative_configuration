@@ -72,5 +72,6 @@ cask "claude"
 cask "claude-code"
 cask "chatgpt"
 brew "kimi-code"
+cask "lm-studio"       # offline LLMs; renders LaTeX, ships MLX builds for Apple Silicon
 
 cask "obsidian"

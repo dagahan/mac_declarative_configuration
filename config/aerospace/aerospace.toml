@@ -50,6 +50,15 @@ persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 floating-workspaces = ["1"]
 
+# Push the focused workspace to AltTab, which watches this file. The line carries the answer rather
+# than acting as a bare nudge on purpose: right after a workspace switch the aerospace CLI takes
+# 250-300ms to reply (the server is busy showing/hiding windows), so a cmd-tab landing in that window
+# would either stall or use a stale mode and refuse to open. IS_FLOATING comes from
+# floating-workspaces above, so this never needs to duplicate that list.
+exec-on-workspace-change = ['/bin/sh', '-c',
+    'mkdir -p "$HOME/.cache/aerospace" && printf "%s %s\n" "$AEROSPACE_FOCUSED_WORKSPACE_IS_FLOATING" "$AEROSPACE_FOCUSED_WORKSPACE" > "$HOME/.cache/aerospace/workspace-changed"'
+]
+
 # smart-open: apps that should switch to their existing window instead of opening a
 # new one, even if they expose a New Window menu item. Apps that bind ⌘N to something
 # that isn't a window (Spotify -> New Playlist, VS Code -> New Text File) are rejected

@@ -9,6 +9,9 @@ default com.lwouis.alt-tab-macos menubarIconShown   string false
 default com.lwouis.alt-tab-macos startAtLogin       string false
 # ShowHowPreference raw index: 1 = hide (windowless ghosts otherwise show everywhere)
 default com.lwouis.alt-tab-macos showWindowlessApps string 1
+# Upstream default is 100ms of dead time before the switcher is even built. Only an
+# exact 0 takes the synchronous show path (App.swift showUiOrCycleSelection).
+default com.lwouis.alt-tab-macos windowDisplayDelay string 0
 # LinearMouse JSON-encodes this enum: the value must contain literal quote bytes.
 default com.lujjjh.LinearMouse   menuBarVisibilityMode string '"never"'
 default org.hammerspoon.Hammerspoon MJShowMenuIconKey bool false
