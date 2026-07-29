@@ -132,7 +132,7 @@ app_apply() {
     fi
 
     rm -rf "$stage"
-    before_exists "app:$name" || before_save "app:$name" "path:$dest"
+    placement_exists "app:$name" || placement_save "app:$name" "path:$dest"
     lock_set "$name" "path=$dest" "bundle=$(_app_bundle "$dest")" \
         "bundle_version=$(_app_version "$dest")" "installed=$(date -u '+%Y-%m-%d')"
     REASON=''
@@ -143,7 +143,7 @@ app_revert() {
     local id=$1 name dest
     name=${id#app:}
     dest=$(lock_get "$name" path)
-    [[ -n "$dest" ]] || dest=$(before_get "$id" | sed 's/^path://')
+    [[ -n "$dest" ]] || dest=$(placement_get "$id" | sed 's/^path://')
     if [[ "$(lock_get "$name" format)" == pkg ]]; then
         REASON="pkg receipts must be removed by hand: pkgutil --pkgs | grep -i $name"
         return 1

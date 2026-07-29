@@ -19,8 +19,9 @@ usage: mac <command> [unit...] [-v]
   check [unit...]     plan only — pure, offline, changes nothing
   sync  [unit...]     converge the machine to the repo
   up    [app...]      move external apps forward, as an apps.lock diff
-  restart             activation pass alone
-  reload              start the desktop, then re-read its live configs
+  workspace <up|down|reload>
+                      the desktop: start it · stop it and hand the mac back ·
+                      both, in that order. never builds — that is sync's job
 
   tree | list         the dependency graph · units and counts
   explain <name>      everything known about a resource
@@ -68,8 +69,7 @@ case "$CMD" in
     prune)   cmd_prune   "${ARGV[@]}" ;;
     forget)  cmd_forget  "${ARGV[@]}" ;;
     ack)     cmd_ack     "${ARGV[@]}" ;;
-    restart) cmd_restart ;;
-    reload)  cmd_reload ;;
+    workspace) cmd_workspace "${ARGV[@]}" ;;
     scan)    cmd_scan    "${ARGV[@]}" ;;
     adopt)   cmd_adopt   "${ARGV[@]}" ;;
     capture) cmd_capture "${ARGV[@]}" ;;

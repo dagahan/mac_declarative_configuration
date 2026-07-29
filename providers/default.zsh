@@ -47,10 +47,6 @@ default_check() {
 default_apply() {
     local id=$1 domain=${POS[1]} key=${POS[2]} type=${POS[3]} want="${POS[4]:-}"
     local cur rc app
-    cur=$(_def_read "$domain" "$key"); rc=$?
-    (( rc == 0 )) || cur='<absent>'
-    before_save "$id" "$type"$'\n'"$cur"
-
     case $type in
         array)  defaults write "$domain" "$key" -array ;;
         bool)   defaults write "$domain" "$key" -bool "$want" ;;
@@ -72,25 +68,35 @@ default_apply() {
     return 0
 }
 
-default_revert() {
-    local id=$1 prev type value app
-    _def_parts "$id"
-    prev=$(before_get "$id")
-    type="${prev%%$'\n'*}"
-    value="${prev#*$'\n'}"
-    if [[ -z "$prev" || "$value" == '<absent>' ]]; then
-        defaults delete "$DEF_DOMAIN" "$DEF_KEY" 2>/dev/null
+# The off state is declared, never inferred. Reading the machine's value at first
+# apply and calling that "the original" was a fiction: whichever sync happened to
+# run first decided it, and for most keys no such record was ever written, so a
+# revert silently became a delete. `on_workspace_down=` says what off means, in
+# the repo, where it can be reviewed.
+default_down() {
+    local id=$1 domain=${POS[1]} key=${POS[2]} type=${POS[3]}
+    local want="${P[on_workspace_down]:-}" app
+    [[ -n "$want" ]] || { REASON="no on_workspace_down= declared"; return 1 }
+    if [[ "$want" == delete ]]; then
+        defaults delete "$domain" "$key" 2>/dev/null
     else
         case $type in
-            bool)   defaults write "$DEF_DOMAIN" "$DEF_KEY" -bool "$value" ;;
-            int)    defaults write "$DEF_DOMAIN" "$DEF_KEY" -int "$value" ;;
-            float)  defaults write "$DEF_DOMAIN" "$DEF_KEY" -float "$value" ;;
-            *)      defaults write "$DEF_DOMAIN" "$DEF_KEY" -string "$value" ;;
+            array)  defaults write "$domain" "$key" -array ;;
+            bool)   defaults write "$domain" "$key" -bool "$want" ;;
+            int)    defaults write "$domain" "$key" -int "$want" ;;
+            float)  defaults write "$domain" "$key" -float "$want" ;;
+            string) defaults write "$domain" "$key" -string "$want" ;;
+            raw)    defaults write "$domain" "$key" "$want" ;;
+            *)      REASON="unknown type '$type'"; return 1 ;;
         esac
+        if (( $? != 0 )); then REASON="defaults write failed"; return 1; fi
     fi
-    app="${DOMAIN_APP[$DEF_DOMAIN]:-}"
+    app="${P[affects]:-${DOMAIN_APP[$domain]:-}}"
     [[ -n "$app" ]] && needs_restart "$app"
+    REASON=''
     return 0
 }
+
+default_revert() { default_down "$@" }
 
 default_describe() { print -r -- "${POS[1]} ${POS[2]}" }

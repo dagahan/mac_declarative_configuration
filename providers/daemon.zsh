@@ -96,7 +96,7 @@ daemon_apply() {
         fi
     fi
 
-    before_exists "$id" || before_save "$id" "$dom/$label"
+    placement_exists "$id" || placement_save "$id" "$dom/$label"
 
     # bootout returns before the job is actually gone; bootstrapping into a
     # domain that still holds the old label is refused outright.
@@ -125,7 +125,7 @@ daemon_apply() {
 
 daemon_revert() {
     local id=$1 rec
-    rec=$(before_get "$id")
+    rec=$(placement_get "$id")
     [[ -n "$rec" ]] || { REASON="no record of this job"; return 1 }
     if [[ "$rec" == system/* ]]; then
         sudo -n launchctl bootout "$rec" 2>/dev/null

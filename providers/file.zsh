@@ -101,12 +101,12 @@ file_apply() {
     # The before-image records the destination as well as the prior state: by
     # the time we revert, the declaration is gone, so the id is all we have.
     [[ -n "${P[root]:-}" ]] || mkdir -p "${dst:h}" || { REASON="cannot create ${dst:h}"; return 1 }
-    if ! before_exists "$id"; then
+    if ! placement_exists "$id"; then
         if [[ -e "$dst" ]]; then
             cp -p "$dst" "$dst.pre-mac_setup" || { REASON="cannot back up $dst"; return 1 }
-            before_save "$id" "$dst"$'\t'"backup:$dst.pre-mac_setup"
+            placement_save "$id" "$dst"$'\t'"backup:$dst.pre-mac_setup"
         else
-            before_save "$id" "$dst"$'\t'"absent"
+            placement_save "$id" "$dst"$'\t'"absent"
         fi
     fi
 
@@ -134,7 +134,7 @@ file_apply() {
 
 file_revert() {
     local id=$1 rec dst prev
-    rec=$(before_get "$id")
+    rec=$(placement_get "$id")
     dst="${rec%%$'\t'*}"
     prev="${rec#*$'\t'}"
     [[ -n "$rec" && "$dst" != "$rec" ]] || { REASON="no record of where this file was written"; return 1 }

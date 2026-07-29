@@ -1,13 +1,32 @@
-# The ledger answers one question: "is this mine to touch, and what was here
-# before I arrived?" It is never asked what the machine currently looks like —
-# that always comes from a live probe.
+# The ledger answers one question: "is this mine to touch?" It is never asked what
+# the machine currently looks like — that always comes from a live probe — and it
+# no longer claims to know what the machine looked like before mac_setup arrived.
+# That claim was a fiction: whichever sync ran first decided what "before" meant,
+# and for most keys nothing was ever recorded, so reverting quietly became
+# deleting. Units declare their own off state with on_workspace_down= instead.
 zmodload zsh/datetime
 typeset -g STATE="${XDG_STATE_HOME:-$HOME/.local/state}/mac_setup"
 typeset -g LEDGER="$STATE/ledger.tsv"
 typeset -gi SCHEMA=1
 typeset -gA L_OWNED
 
-state_init() { mkdir -p "$STATE"/{before,journal,cache,artifacts,pending-restart,files,daemons} }
+state_init() {
+    mkdir -p "$STATE"/{placed,journal,cache,artifacts,pending-restart,files,daemons}
+    _placement_migrate
+}
+
+# $STATE/before held two unrelated things under one name: guesses at prior state,
+# and the only record of *where* a resource put something. The first is gone; the
+# second has to survive, or prune can no longer find what it needs to remove.
+_placement_migrate() {
+    [[ -d "$STATE/before" ]] || return 0
+    local f
+    for f in "$STATE"/before/*(N); do
+        [[ "${f:t}" == default_* ]] && continue
+        [[ -e "$STATE/placed/${f:t}" ]] || mv "$f" "$STATE/placed/${f:t}"
+    done
+    rm -rf "$STATE/before"
+}
 
 needs_restart()    { mkdir -p "$STATE/pending-restart"; touch "$STATE/pending-restart/$1" }
 restart_pending()  { [[ -f "$STATE/pending-restart/$1" ]] }
@@ -45,22 +64,29 @@ ledger_claim()  {
 }
 ledger_release() { unset "L_OWNED[$1]" }
 
-_before_file() {
+# Where a resource put something — a daemon's launchd domain, an app's install
+# path, a file's destination. Not a snapshot of prior state: by the time we revert,
+# the declaration has been deleted from the repo and the id is all we have left.
+_placement_file() {
     local key="${1//[^a-zA-Z0-9._-]/_}"
-    print -r -- "$STATE/before/$key"
+    print -r -- "$STATE/placed/$key"
 }
-before_save() {
-    local f; f=$(_before_file "$1")
+placement_save() {
+    local f; f=$(_placement_file "$1")
     [[ -e "$f" ]] || print -r -- "$2" > "$f"
 }
-before_get()    { local f; f=$(_before_file "$1"); [[ -e "$f" ]] && cat "$f" }
-before_exists() { local f; f=$(_before_file "$1"); [[ -e "$f" ]] }
-before_drop()   { local f; f=$(_before_file "$1"); rm -f "$f" }
+placement_get()    { local f; f=$(_placement_file "$1"); [[ -e "$f" ]] && cat "$f" }
+placement_exists() { local f; f=$(_placement_file "$1"); [[ -e "$f" ]] }
+placement_drop()   { local f; f=$(_placement_file "$1"); rm -f "$f" }
 
 lock_acquire() {
     local d="$STATE/lock" pid
     if mkdir "$d" 2>/dev/null; then print -r -- $$ > "$d/pid"; return 0; fi
     pid=$(cat "$d/pid" 2>/dev/null)
+    # Re-entrant for one process: `mac workspace reload` is a teardown followed by
+    # a sync in the same shell, and the second would otherwise mistake the first
+    # for a competing run and refuse to start.
+    [[ "$pid" == $$ ]] && return 0
     if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
         die "another mac run is in progress (pid $pid)"
     fi

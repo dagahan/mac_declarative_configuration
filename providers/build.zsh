@@ -78,7 +78,7 @@ build_apply() {
 
     print -r -- "$fp" > "$(_build_stamp_file "$name")"
     _build_prune_cache "$name"
-    before_exists "$1" || before_save "$1" "app:$app"
+    placement_exists "$1" || placement_save "$1" "app:$app"
     needs_restart "$proc"
     REASON=''
     return 0
@@ -93,7 +93,7 @@ build_revert() {
     local id=$1 name prev
     name=${id#build:}
     [[ -n "$name" ]] || { REASON="no name to revert"; return 1 }
-    prev=$(before_get "$id")
+    prev=$(placement_get "$id")
     [[ "$prev" == app:* ]] && rm -rf "${prev#app:}"
     rm -f "$(_build_stamp_file "$name")"
     rm -rf "$STATE/artifacts/$name"

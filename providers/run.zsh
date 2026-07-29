@@ -30,8 +30,13 @@ run_apply() {
 }
 
 run_revert() {
+    local rc=0
     [[ -n "${P[revert]:-}" ]] || { REASON="no revert declared"; return 1 }
-    ( cd "$ROOT" && eval "${P[revert]}" )
+    LAST_OUTPUT=$( cd "$ROOT" && eval "${P[revert]}" 2>&1 ); rc=$?
+    (( rc == 0 )) && return 0
+    REASON=$(print -r -- "$LAST_OUTPUT" | grep -v '^[[:space:]]*$' | tail -2 | tr '\n' ' ')
+    [[ -n "$REASON" ]] || REASON="exit $rc"
+    return 1
 }
 
 run_describe() { print -r -- "${P[why]:-${P[apply]:-}}" }

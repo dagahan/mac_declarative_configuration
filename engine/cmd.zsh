@@ -1,7 +1,7 @@
 typeset -gA ST RSN SKIP
 typeset -ga SELECTED
 typeset -g REASON='' LAST_OUTPUT=''
-typeset -gi VERBOSE=0 ASSUME_YES=0
+typeset -gi VERBOSE=0 ASSUME_YES=0 ROOT_OPTIONAL=0
 
 target_of() { print -r -- "${1#*:}" }
 
@@ -181,8 +181,16 @@ apply_all() {
     local id t
     typeset -A DIRTY
     if _plan_wants_root && ! sudo_ensure; then
-        print -r -- "  $S_BAD no password given — nothing was applied"
-        return 1
+        # For sync, refusing to start beats a half-converged machine. For the
+        # workspace commands it is the opposite: they exist to get the desktop
+        # into a usable state, and most of what they do needs no password at all.
+        if (( ROOT_OPTIONAL )); then
+            print -r -- "  $S_WARN no password — the parts that need root are skipped"
+            print -r -- ""
+        else
+            print -r -- "  $S_BAD no password given — nothing was applied"
+            return 1
+        fi
     fi
     for id in "${SELECTED[@]}"; do
         if [[ -n "${DIRTY[$id]:-}" && "${ST[$id]}" != drift ]]; then
@@ -333,7 +341,7 @@ cmd_explain() {
         print -r -- "    provider  ${R_PROVIDER[$id]}"
         print -r -- "    args      ${R_ARGS[$id]}"
         print -r -- "    owned     $(ledger_owned "$id" && print yes || print no)"
-        before_exists "$id" && print -r -- "    before    $(before_get "$id")"
+        placement_exists "$id" && print -r -- "    placed    $(placement_get "$id")"
         [[ -n "${E_DEP[$id]:-}" ]] && print -r -- "    blocks    ${E_DEP[$id]}"
         REASON=''; provider_call check "$id"
         print -r -- "    state     $? ${REASON}"
@@ -368,7 +376,7 @@ cmd_prune() {
         resurrect "$id"
         REASON=''
         if provider_call revert "$id"; then
-            ledger_release "$id"; before_drop "$id"
+            ledger_release "$id"; placement_drop "$id"
             print -r -- "  $S_OK reverted $id"
             journal "revert $id ok"
         else
@@ -394,7 +402,7 @@ cmd_forget() {
     local id=$1
     [[ -n "$id" ]] || die "usage: mac forget <resource-id>"
     ledger_owned "$id" || die "not owned by mac_setup: $id"
-    ledger_release "$id"; before_drop "$id"; ledger_save
+    ledger_release "$id"; placement_drop "$id"; ledger_save
     print -r -- "$S_OK forgot $id (machine untouched)"
 }
 
@@ -485,18 +493,92 @@ cmd_up() {
     return $rc
 }
 
-# Bring the desktop up, then re-read the configs of what is now running.
-# Nothing starts at login, so this is the command that makes the machine
-# usable after a reboot.
-cmd_reload() {
-    cmd_sync activate
-    local rc=$?
+# The desktop: everything that has to be running, and every preference that only
+# makes sense while it is. Nothing here starts at login, so `up` is what makes the
+# machine usable after a reboot and `down` is what makes it usable without one.
+#
+# Builds are deliberately out of scope. `up` starts what is installed and says so
+# when something is missing; making a stale binary current is `mac sync`'s job,
+# and a workspace command should never turn into a ten-minute compile.
+typeset -ga WORKSPACE_SELECTORS=(
+    dock input menubar karabiner activate
+    'stop:Ainto' 'default:app.ainto.macos/*'
+)
+
+cmd_workspace() {
+    local action=${1:-}
+    case "$action" in
+        up)     _workspace_up ;;
+        down)   _workspace_down ;;
+        reload) _workspace_down; print -r -- ""; _workspace_up ;;
+        *)      print -ru2 -- "usage: mac workspace <up|down|reload>"; return 2 ;;
+    esac
+}
+
+_workspace_up() {
+    hdr "workspace up"
+    ROOT_OPTIONAL=1
+    cmd_sync "${WORKSPACE_SELECTORS[@]}"
+}
+
+# Reverse topological order: stop the things that depend on something before the
+# something. No ledger release and no placement drop — unlike prune, this is a
+# state the machine is expected to come back from.
+_workspace_down() {
+    lock_acquire
+    trap 'lock_release' EXIT INT TERM
+    journal_open workspace down
+    build_graph; topo; select_ids "${WORKSPACE_SELECTORS[@]}"
+    hdr "workspace down"
+    local -a targets
+    local id rc=0 n=0
+    targets=("${(@Oa)SELECTED}")
+    # Unlike sync, a missing password does not abort. Everything that can be
+    # handed back still is: stopping halfway leaves the machine in exactly the
+    # state this command exists to get out of.
+    if _selection_wants_root && ! sudo_ensure; then
+        print -r -- "  $S_WARN no password — the parts that need root are skipped"
+        print -r -- ""
+    fi
+    for id in "${targets[@]}"; do
+        case "${R_PROVIDER[$id]}" in
+            manual|stop|link|file|build|app|daemon|pkg) continue ;;
+        esac
+        REASON=''
+        if provider_call revert "$id"; then
+            (( n++ ))
+            print -r -- "  $S_OK ${R_PROVIDER[$id]} $(target_of "$id")"
+            journal "down $id ok"
+        else
+            rc=1
+            print -r -- "  $S_BAD ${R_PROVIDER[$id]} $(target_of "$id") — ${REASON:-failed}"
+            journal "down $id FAILED ${REASON}"
+        fi
+    done
+    _workspace_restart_owners
     print -r -- ""
-    zsh "$ROOT/recipes/reload.zsh"
+    print -r -- "  $n down · $( (( rc )) && print "some failed" || print "no failures")"
     return $rc
 }
 
-cmd_restart() { cmd_sync activate }
+# A defaults write is only visible once the app that caches it is restarted, and
+# `down` has just stopped most of them — the Dock is the one that must come back.
+_workspace_restart_owners() {
+    local app
+    for app in "$STATE"/pending-restart/*(N); do
+        [[ "${app:t}" == Dock ]] || continue
+        killall Dock 2>/dev/null && restart_done Dock
+    done
+}
+
+_selection_wants_root() {
+    local id
+    for id in "${SELECTED[@]}"; do
+        parse_args "$id"
+        [[ -n "${P[root]:-}" ]] && return 0
+    done
+    return 1
+}
 
 # Everything in /Applications that no resource claims. The two ways state leaks
 # onto the machine — apps and defaults — are both instrumented, so the repo
@@ -629,6 +711,18 @@ cmd_lint() {
     if (( ${#undocumented} )); then
         for id in "${undocumented[@]}"; do
             print -r -- "  $S_BAD $id — every run= escape hatch needs a why="
+        done
+        rc=1
+    fi
+    local -a no_down
+    for id in "${R_IDS[@]}"; do
+        [[ "${R_PROVIDER[$id]}" == default ]] || continue
+        parse_args "$id"
+        [[ -n "${P[on_workspace_down]:-}" ]] || no_down+=("$id")
+    done
+    if (( ${#no_down} )); then
+        for id in "${no_down[@]}"; do
+            print -r -- "  $S_BAD $id — every default needs on_workspace_down= (a value, or 'delete')"
         done
         rc=1
     fi

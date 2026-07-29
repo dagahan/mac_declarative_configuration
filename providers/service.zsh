@@ -60,6 +60,11 @@ service_apply() {
 
 service_revert() {
     local app=${1#service:}
+    # kind=killall means the OS owns the process and respawns it — the Dock. There
+    # is no "stopped" state to revert to, and waiting for one would stall ten
+    # seconds and then report a failure. Its restart is handled after the defaults
+    # it reads have been rewritten, not here.
+    [[ "${P[kind]:-}" == killall ]] && return 0
     _svc_stop "$app"
     return 0
 }

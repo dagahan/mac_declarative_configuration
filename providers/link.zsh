@@ -16,9 +16,9 @@ link_apply() {
     mkdir -p "${dst:h}"
     if [[ -e "$dst" && ! -L "$dst" ]]; then
         mv "$dst" "$dst.pre-mac_setup" || { REASON="cannot back up $dst"; return 1 }
-        before_save "$id" "backup:$dst.pre-mac_setup"
+        placement_save "$id" "backup:$dst.pre-mac_setup"
     else
-        before_exists "$id" || before_save "$id" "absent"
+        placement_exists "$id" || placement_save "$id" "absent"
     fi
     ln -sfn "$src" "$dst" || { REASON="symlink failed"; return 1 }
     return 0
@@ -29,7 +29,7 @@ link_revert() {
     # see an earlier one, so `local id=$1 dst="${id#link:}"` leaves dst empty.
     local id=$1 prev dst
     dst="${id#link:}"
-    prev=$(before_get "$id")
+    prev=$(placement_get "$id")
     [[ -L "$dst" ]] && rm -f "$dst"
     [[ "$prev" == backup:* && -e "${prev#backup:}" ]] && mv "${prev#backup:}" "$dst"
     return 0
