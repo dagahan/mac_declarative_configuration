@@ -1,7 +1,6 @@
 requires=(brew alttab)
 
 stop AltTab      before='default:com.lwouis.alt-tab-macos/*'
-stop LinearMouse before='default:com.lujjjh.LinearMouse/*'
 stop Hammerspoon before='default:org.hammerspoon.Hammerspoon/*'
 
 # AltTab stores booleans as literal strings; a -bool write is discarded on launch.
@@ -14,8 +13,6 @@ default com.lwouis.alt-tab-macos showWindowlessApps string 1      on_workspace_d
 # Upstream default is 100ms of dead time before the switcher is even built. Only an
 # exact 0 takes the synchronous show path (App.swift showUiOrCycleSelection).
 default com.lwouis.alt-tab-macos windowDisplayDelay string 0      on_workspace_down=delete
-# LinearMouse JSON-encodes this enum: the value must contain literal quote bytes.
-default com.lujjjh.LinearMouse   menuBarVisibilityMode string '"never"' on_workspace_down='"always"'
 default org.hammerspoon.Hammerspoon MJShowMenuIconKey bool false  on_workspace_down=true
 
 manual ayugram-menubar-icon \

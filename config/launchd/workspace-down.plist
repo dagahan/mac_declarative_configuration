@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.mac-setup.workspace-down</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>-lc</string>
+        <string>/Users/nick/mac_setup/mac workspace down</string>
+    </array>
+    <key>RunAtLoad</key><true/>
+    <key>StandardOutPath</key><string>/Users/nick/.local/state/mac_setup/journal/workspace-down-at-login.log</string>
+    <key>StandardErrorPath</key><string>/Users/nick/.local/state/mac_setup/journal/workspace-down-at-login.log</string>
+</dict>
+</plist>

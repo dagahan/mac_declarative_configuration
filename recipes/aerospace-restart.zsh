@@ -1,5 +1,9 @@
 export PATH="/opt/homebrew/bin:$PATH"
+# Empty when AeroSpace was not running — the usual case, since this is what
+# starts it after a reboot. Falling back to the floating workspace keeps `up`
+# unnoticeable: nothing is focused elsewhere and nothing gets retiled.
 prev="$(aerospace list-workspaces --focused 2>/dev/null | head -1)"
+: "${prev:=1}"
 
 pkill -x AeroSpace 2>/dev/null
 for _ in {1..50}; do pgrep -qx AeroSpace || break; sleep 0.2; done

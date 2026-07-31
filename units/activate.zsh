@@ -2,7 +2,6 @@ requires=(aerospace alttab ainto karabiner dock input menubar bitwarden dotfiles
 
 service Dock        kind=killall
 service AltTab
-service LinearMouse
 service Hammerspoon path=/Applications/Hammerspoon.app
 service Ainto
 service Easydict

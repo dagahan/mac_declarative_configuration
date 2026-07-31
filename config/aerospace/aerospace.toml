@@ -22,6 +22,15 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # You can set 0 to disable the padding feature
 accordion-padding = 30
 
+# Land on the floating workspace before any window is discovered.
+#
+# AeroSpace assigns every window it finds to whichever workspace is focused at
+# that moment. Starting anywhere else therefore swept every existing window onto
+# a tiling workspace and reshaped the lot — a `mac workspace up` that visibly
+# rearranged the desktop. Workspace 1 is in floating-workspaces, so windows found
+# here keep their own size and position.
+after-startup-command = ['workspace 1']
+
 # Possible values: tiles|accordion
 default-root-container-layout = 'tiles'
 
