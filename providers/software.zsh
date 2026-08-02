@@ -44,7 +44,11 @@ software_apply() {
     local rc unread=0
     software_link_tap || return 1
     software_learn_missing || unread=1
+    # Its own line: learning replaced the caller's spinner with one per download,
+    # and the install that follows can be the longest part of the whole run.
+    spin_start "installing packages"
     sh_run "brew bundle --file=${(q)BREWFILE} --no-upgrade"; rc=$?
+    spin_stop
     if (( rc != 0 )); then REASON=$(sh_tail $rc); return 1; fi
     # Everything installable was installed; the run still failed, but it says so
     # about the entry that could not be read rather than about all of them.

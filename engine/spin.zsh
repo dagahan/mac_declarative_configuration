@@ -7,19 +7,28 @@ typeset -gi SPIN_ON=0 SPIN_T0=0
 
 _spin_drawable() { [[ -t 1 && -z "${NO_COLOR:-}" ]] && (( ! VERBOSE )) }
 
+# Starting a spinner always stops the one before it. There is exactly one line
+# being animated at a time, and exactly one pid to kill — a nested spin_start
+# used to overwrite that pid and leave the outer spinner running forever, which
+# survived the run that started it and scribbled over the prompt.
 spin_start() {
+    spin_stop
     SPIN_LABEL="$1"
     SPIN_T0=$EPOCHSECONDS
     if ! _spin_drawable; then
         print -r -- "  ${C_DIM}…${C_RESET} $SPIN_LABEL"
         return 0
     fi
+    typeset -g SPIN_PARENT=$$
     printf '\033[?25l'
     (
         local -a f
         f=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
         local -i i=1 el
         while :; do
+            # Never outlive whatever started it. A spinner is decoration; if the
+            # run it belongs to is gone, so is any reason to keep drawing.
+            kill -0 "$SPIN_PARENT" 2>/dev/null || { printf '\r\033[2K\033[?25h'; exit 0 }
             el=$(( EPOCHSECONDS - SPIN_T0 ))
             # Elapsed only once a step is slow enough to make you wonder.
             if (( el >= 2 )); then
@@ -43,12 +52,12 @@ spin_start() {
 # what turned a cosmetic helper into a hang: a disowned job is not a child zsh
 # will ever reap, so `wait` on it never returns.
 spin_stop() {
-    (( SPIN_ON )) || return 0
-    SPIN_ON=0
     if [[ -n "$SPIN_PID" ]]; then
         kill -9 "$SPIN_PID" 2>/dev/null
         SPIN_PID=''
     fi
+    (( SPIN_ON )) || return 0
+    SPIN_ON=0
     printf '\r\033[2K\033[?25h'
     return 0
 }
