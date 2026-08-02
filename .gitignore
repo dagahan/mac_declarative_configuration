@@ -1,5 +1,10 @@
 .DS_Store
 backups/
 
+# generated from software.toml into ~/.local/state/mac_setup; never in the repo
+Brewfile
+tap/
+apps.lock
+
 # rendered configs and the unlock key live outside the repo, but be explicit
 *.pre-mac_setup

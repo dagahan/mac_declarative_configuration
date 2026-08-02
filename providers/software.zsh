@@ -4,9 +4,7 @@
 # hand-rolled installer had to reimplement badly.
 software_check() {
     local rc
-    software_render dry; rc=$?
-    (( rc == 2 )) && return 1
-    (( rc == 1 )) && { REASON="Brewfile is stale — software.toml changed"; return 1 }
+    software_render || return 1
     software_link_tap || return 2
     local secs="${P[timeout]:-300}"
     with_timeout "$secs" "brew bundle check --no-upgrade --file=${(q)BREWFILE}" >/dev/null 2>&1; rc=$?
@@ -29,23 +27,16 @@ _software_missing() {
 
 # Uninstalling everything Homebrew just installed is a worse outcome than
 # leaving it installed — a cancelled sync should not strip the machine. The
-# generated files are restored, so the repo is never left half-rendered.
+# generated files are a cache rebuilt from software.toml on the next run, so
+# there is nothing else here to put back.
 software_undo() {
-    local blob n
-    if blob=$(undo_backup "$BREWFILE"); then
-        undo_push "restore Brewfile" "cp -p ${(q)blob} ${(q)BREWFILE}"
-    fi
-    if [[ -d "$TAPDIR/Casks" ]] && blob=$(undo_backup "$TAPDIR/Casks"); then
-        undo_push "restore generated casks" "rm -rf ${(q)TAPDIR}/Casks; cp -pR ${(q)blob} ${(q)TAPDIR}/Casks"
-    fi
     undo_push "leave installed packages alone" ":"
     return 0
 }
 
 software_apply() {
     local rc
-    software_render write; rc=$?
-    (( rc == 2 )) && return 1
+    software_render || return 1
     software_link_tap || return 1
     sh_run "brew bundle --file=${(q)BREWFILE} --no-upgrade"; rc=$?
     (( rc == 0 )) && { REASON=''; return 0 }
