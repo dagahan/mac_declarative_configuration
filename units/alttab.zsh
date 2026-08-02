@@ -1,4 +1,4 @@
-requires=(base brew)
+requires=(base software)
 
 build alttab from=vendor/alt-tab-macos recipe=recipes/alttab.zsh \
       artifact=DerivedData/Build/Products/Release/AltTab.app \

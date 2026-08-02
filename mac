@@ -4,41 +4,45 @@ export PATH="/opt/homebrew/bin:$PATH"
 export LC_ALL="${LC_ALL:-en_US.UTF-8}"
 
 source "$ROOT/engine/report.zsh"
+source "$ROOT/engine/state.zsh"
+source "$ROOT/engine/spin.zsh"
+source "$ROOT/engine/undo.zsh"
 source "$ROOT/engine/core.zsh"
 source "$ROOT/engine/graph.zsh"
-source "$ROOT/engine/ledger.zsh"
-source "$ROOT/engine/applock.zsh"
+source "$ROOT/engine/software.zsh"
 source "$ROOT/engine/secrets.zsh"
 source "$ROOT/engine/cmd.zsh"
 for _p in "$ROOT"/providers/*.zsh(N); do source "$_p"; done
 
 usage() {
     cat <<'EOF'
-usage: mac <command> [unit...] [-v]
 
-  check [unit...]     plan only — pure, offline, changes nothing
-  sync  [unit...]     converge the machine to the repo
-  up    [app...]      move external apps forward, as an apps.lock diff
-  workspace <up|down|reload>
-                      the desktop: start it · stop it and hand the mac back ·
-                      both, in that order. never builds — that is sync's job
+  mac — this machine, declared
 
-  tree | list         the dependency graph · units and counts
-  explain <name>      everything known about a resource
-  scan | adopt <App>  find unmanaged apps · write a declaration for one
-  capture <domain>    learn a defaults declaration from the machine
-  lint                units must stay declarations only
-  secret <add|get|list|rotate>   private values, encrypted in the repo
-  prune | forget      revert what left the repo · drop ownership
-  ack <step>          retire a done manual step
-  log [-l|-f|<run>]   last run's journal · list · follow · one by name
-  do [task]           one-shot tasks · no name lists them
-  vpn [command]       the tunnel · no name lists them
+  what you edit
+    software.toml       every package, download and by-hand step, in one list
+    units/*.zsh         everything that is configured rather than installed
+
+  commands
+    check [unit...]     plan only — pure, offline, changes nothing
+    sync  [unit...]     converge the machine to the repo
+    workspace <up|down|reload>
+                        the desktop: start it · stop it and hand the mac back ·
+                        both, in that order. never builds — that is sync's job
+
+    tree | list         the dependency graph · units and counts
+    lint                units stay declarations, and every write stays undoable
+    secret <add|get|list|rotate>   private values, encrypted in the repo
+    log [-l|-f|<run>]   last run's journal · list · follow · one by name
+    do [task]           one-shot tasks · no name lists them
+    vpn [command]       the tunnel · no name lists them
+
+  ^C stops any run. Whatever was mid-write is put back before it exits.
+
 EOF
 }
 
 state_init
-ledger_load
 load_units
 
 typeset -a ARGV
@@ -53,26 +57,31 @@ for _a in "$@"; do
         *)            if [[ -z "$CMD" ]]; then CMD=$_a; else ARGV+=("$_a"); fi ;;
     esac
 done
-: ${CMD:=check}
+
+# Bare `mac` says what mac is. It used to run a full check of the machine, which
+# is a slow and surprising answer to a question nobody asked.
+[[ -z "$CMD" ]] && { usage; exit 0 }
 
 journal_open "$CMD" "${ARGV[@]}"
+
+# Every exit path — a clean return, a die, a ^C that fell through — puts the
+# cursor back and unwinds anything still mid-write.
+TRAPEXIT() {
+    spin_stop
+    undo_rollback
+    lock_release
+}
+
+undo_recover
 
 case "$CMD" in
     check)   cmd_check   "${ARGV[@]}" ;;
     sync)    cmd_sync    "${ARGV[@]}" ;;
     tree)    cmd_tree    "${ARGV[@]}" ;;
     list)    cmd_list    "${ARGV[@]}" ;;
-    explain) cmd_explain "${ARGV[@]}" ;;
     secret)  cmd_secret  "${ARGV[@]}" ;;
     log)     cmd_log     "${ARGV[@]}" ;;
-    up)      cmd_up      "${ARGV[@]}" ;;
-    prune)   cmd_prune   "${ARGV[@]}" ;;
-    forget)  cmd_forget  "${ARGV[@]}" ;;
-    ack)     cmd_ack     "${ARGV[@]}" ;;
     workspace) cmd_workspace "${ARGV[@]}" ;;
-    scan)    cmd_scan    "${ARGV[@]}" ;;
-    adopt)   cmd_adopt   "${ARGV[@]}" ;;
-    capture) cmd_capture "${ARGV[@]}" ;;
     lint)    cmd_lint    "${ARGV[@]}" ;;
     do)      cmd_do      "${ARGV[@]}" ;;
     help)    usage ;;

@@ -72,6 +72,27 @@ daemon_check() {
     return 1
 }
 
+# Whether the job was loaded, and under which definition. The plist file itself
+# is an ordinary `file` resource with an undo of its own, so all that has to be
+# recorded here is the load state it was found in.
+daemon_undo() {
+    local id=$1 label="${P[label]}" dom plist stamp ctl blob
+    dom=$(_daemon_domain); plist=$(_daemon_plist); stamp=$(_daemon_stamp "$id")
+    ctl="launchctl"; _daemon_root && ctl="sudo -n launchctl"
+    if _daemon_ctl print "$dom/$label" >/dev/null 2>&1; then
+        undo_push "reload $label" \
+            "$ctl bootout ${(q)dom}/${(q)label} 2>/dev/null; $ctl bootstrap ${(q)dom} ${(q)plist} 2>/dev/null; true"
+    else
+        undo_push "unload $label" "$ctl bootout ${(q)dom}/${(q)label} 2>/dev/null; true"
+    fi
+    if [[ -e "$stamp" ]] && blob=$(undo_backup "$stamp"); then
+        undo_push "restore stamp for $label" "cp -p ${(q)blob} ${(q)stamp}"
+    else
+        undo_push "clear stamp for $label" "rm -f ${(q)stamp}"
+    fi
+    return 0
+}
+
 daemon_apply() {
     local id=$1 label="${P[label]}" dom plist i
     dom=$(_daemon_domain); plist=$(_daemon_plist)
@@ -96,13 +117,12 @@ daemon_apply() {
         fi
     fi
 
-    placement_exists "$id" || placement_save "$id" "$dom/$label"
-
     # bootout returns before the job is actually gone; bootstrapping into a
     # domain that still holds the old label is refused outright.
     _daemon_ctl bootout "$dom/$label" 2>/dev/null
     for i in {1..40}; do
         _daemon_ctl print "$dom/$label" >/dev/null 2>&1 || break
+        cancelled && { REASON="cancelled"; return 1 }
         sleep 0.25
     done
     _daemon_ctl bootstrap "$dom" "$plist" 2>/dev/null \
@@ -111,6 +131,7 @@ daemon_apply() {
 
     for i in {1..25}; do
         _daemon_running && break
+        cancelled && { REASON="cancelled"; return 1 }
         sleep 0.2
     done
     if ! _daemon_running; then
@@ -124,14 +145,10 @@ daemon_apply() {
 }
 
 daemon_revert() {
-    local id=$1 rec
-    rec=$(placement_get "$id")
-    [[ -n "$rec" ]] || { REASON="no record of this job"; return 1 }
-    if [[ "$rec" == system/* ]]; then
-        sudo -n launchctl bootout "$rec" 2>/dev/null
-    else
-        launchctl bootout "$rec" 2>/dev/null
-    fi
+    local id=$1 label="${P[label]}" dom
+    dom=$(_daemon_domain)
+    [[ -n "$label" ]] || { REASON="no label to unload"; return 1 }
+    _daemon_ctl bootout "$dom/$label" 2>/dev/null
     rm -f "$(_daemon_stamp "$id")"
     return 0
 }

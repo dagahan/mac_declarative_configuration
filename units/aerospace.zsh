@@ -1,4 +1,4 @@
-requires=(base brew dotfiles)
+requires=(base software dotfiles)
 
 build aerospace from=vendor/AeroSpace recipe=recipes/aerospace.zsh \
       artifact=.xcbuild/Build/Products/Release/AeroSpace.app \

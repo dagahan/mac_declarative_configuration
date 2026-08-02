@@ -1,4 +1,4 @@
-requires=(brew)
+requires=(software)
 
 # Deliberately outside the workspace. Pointer behaviour is not part of the
 # window-manager session: it should be there the moment you log in and it should

@@ -1,4 +1,5 @@
 requires=(aerospace alttab ainto karabiner dock input menubar bitwarden dotfiles)
+workspace=1
 
 service Dock        kind=killall
 service AltTab

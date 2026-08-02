@@ -18,3 +18,15 @@ hdr()  { print -r -- ""; print -r -- "  ${C_BOLD}$*${C_RESET}" }
 dim()  { print -r -- "${C_DIM}$*${C_RESET}" }
 
 pad() { printf '%-*s' "$1" "$2" }
+
+# For anything printed from a signal handler. A trap runs inside whatever
+# command it interrupted, and inherits that command's redirections — so a ^C
+# during `eval ... >/dev/null 2>&1` had its own "cancelling" message sent
+# straight to /dev/null. The terminal is addressed directly instead.
+tty_say() {
+    if [[ -w /dev/tty ]]; then
+        print -r -- "$@" > /dev/tty
+    else
+        print -ru2 -- "$@"
+    fi
+}

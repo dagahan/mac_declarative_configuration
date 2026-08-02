@@ -32,14 +32,32 @@ build_check() {
     return 1
 }
 
+# The installed copy is renamed aside, never deleted, so an interrupted install
+# is one rename away from the bundle that was working ten seconds ago. Both
+# moves are renames within a filesystem: there is no window where neither the
+# old nor the new bundle is in place.
 _build_install() {
     local src=$1 app=$2 proc=$3 sign=$4
     _svc_stop "$proc"
     rm -rf "$app.new"
     ditto "$src" "$app.new" || { REASON="ditto failed"; return 1 }
     [[ "$sign" == 1 ]] && { codesign -f -s mac-setup-codesign --deep "$app.new" 2>/dev/null || { REASON="codesign failed"; rm -rf "$app.new"; return 1 } }
-    rm -rf "$app"
+    rm -rf "$app.mac-prev"
+    [[ -e "$app" ]] && { mv "$app" "$app.mac-prev" || { REASON="cannot move the installed copy aside"; return 1 } }
     mv "$app.new" "$app" || { REASON="install swap failed"; return 1 }
+    return 0
+}
+
+build_undo() {
+    local id=$1 name=${POS[1]} app="${P[app]}" stamp blob
+    stamp=$(_build_stamp_file "$name")
+    undo_push "restore $app" \
+        "rm -rf ${(q)app}.new; if [[ -e ${(q)app}.mac-prev ]]; then rm -rf ${(q)app}; mv ${(q)app}.mac-prev ${(q)app}; fi"
+    if [[ -e "$stamp" ]] && blob=$(undo_backup "$stamp"); then
+        undo_push "restore build stamp for $name" "cp -p ${(q)blob} ${(q)stamp}"
+    else
+        undo_push "clear build stamp for $name" "rm -f ${(q)stamp}"
+    fi
     return 0
 }
 
@@ -56,11 +74,7 @@ build_apply() {
     else
         log="$STATE/journal/build-$name.log"
         export BUILD_DIR="$dir" BUILD_NAME="$name" BUILD_REF="${fp%%.*}"
-        if (( VERBOSE )); then
-            ( zsh "$recipe" 2>&1 | tee "$log" ); rc=$pipestatus[1]
-        else
-            ( zsh "$recipe" > "$log" 2>&1 ); rc=$?
-        fi
+        ( zsh "$recipe" > "$log" 2>&1 </dev/null ); rc=$?
         if (( rc != 0 )); then REASON="build failed — see $log"; return 1; fi
         art="$dir/${P[artifact]}"
         [[ -e "$art" ]] || { REASON="build produced no ${P[artifact]}"; return 1 }
@@ -78,7 +92,7 @@ build_apply() {
 
     print -r -- "$fp" > "$(_build_stamp_file "$name")"
     _build_prune_cache "$name"
-    placement_exists "$1" || placement_save "$1" "app:$app"
+    rm -rf "$app.mac-prev"
     needs_restart "$proc"
     REASON=''
     return 0
@@ -87,17 +101,6 @@ build_apply() {
 _build_prune_cache() {
     local dir="$STATE/artifacts/$1" old
     for old in $(ls -td "$dir"/*.app(N) 2>/dev/null | tail -n +4); do rm -rf "$old"; done
-}
-
-build_revert() {
-    local id=$1 name prev
-    name=${id#build:}
-    [[ -n "$name" ]] || { REASON="no name to revert"; return 1 }
-    prev=$(placement_get "$id")
-    [[ "$prev" == app:* ]] && rm -rf "${prev#app:}"
-    rm -f "$(_build_stamp_file "$name")"
-    rm -rf "$STATE/artifacts/$name"
-    return 0
 }
 
 build_describe() { print -r -- "${POS[1]}" }

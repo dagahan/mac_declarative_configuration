@@ -14,28 +14,37 @@ run_check() {
     return 1
 }
 
+# An escape hatch still has to say how to take itself back. revert= is the
+# inverse; irreversible= is the admission that there is none, and lint insists
+# on one or the other so that "nothing can be undone" is never an accident.
+run_undo() {
+    local id=$1
+    if [[ -n "${P[revert]:-}" ]]; then
+        undo_push "${P[why]:-${id#run:}}" "cd ${(q)ROOT} && ${P[revert]}"
+        return 0
+    fi
+    [[ -n "${P[irreversible]:-}" ]] && return 0
+    REASON="no revert= and no irreversible= — refusing to run something that cannot be taken back"
+    return 1
+}
+
 run_apply() {
     local cmd="${P[apply]:-}" rc=0
     [[ -n "$cmd" ]] || { REASON="no apply= given"; return 1 }
+    stop_owner || return 1
     [[ "${P[sudo]:-0}" == 1 ]] && cmd="sudo $cmd"
-    if (( VERBOSE )); then
-        ( cd "$ROOT" && eval "$cmd" ); rc=$?
-    else
-        LAST_OUTPUT=$( cd "$ROOT" && eval "$cmd" 2>&1 ); rc=$?
-    fi
+    sh_run "cd ${(q)ROOT} && $cmd"; rc=$?
     (( rc == 0 )) && return 0
-    REASON=$(print -r -- "$LAST_OUTPUT" | grep -v '^[[:space:]]*$' | tail -2 | tr '\n' ' ')
-    [[ -n "$REASON" ]] || REASON="exit $rc"
+    REASON=$(sh_tail $rc)
     return 1
 }
 
 run_revert() {
     local rc=0
     [[ -n "${P[revert]:-}" ]] || { REASON="no revert declared"; return 1 }
-    LAST_OUTPUT=$( cd "$ROOT" && eval "${P[revert]}" 2>&1 ); rc=$?
+    sh_run "cd ${(q)ROOT} && ${P[revert]}"; rc=$?
     (( rc == 0 )) && return 0
-    REASON=$(print -r -- "$LAST_OUTPUT" | grep -v '^[[:space:]]*$' | tail -2 | tr '\n' ' ')
-    [[ -n "$REASON" ]] || REASON="exit $rc"
+    REASON=$(sh_tail $rc)
     return 1
 }
 

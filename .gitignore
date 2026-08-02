@@ -1,7 +1,5 @@
 .DS_Store
 backups/
-*.pre-mac_setup
-apps.lock.bak
 
 # rendered configs and the unlock key live outside the repo, but be explicit
 *.pre-mac_setup

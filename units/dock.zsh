@@ -1,4 +1,5 @@
 requires=()
+workspace=1
 
 # on_workspace_down= is the state `mac workspace down` leaves behind: a Dock you
 # can actually reach. `delete` hands the key back to macOS instead of naming one.

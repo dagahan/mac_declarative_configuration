@@ -1,0 +1,88 @@
+# Every piece of software on this machine, in one list.
+#
+#   [install]        anything Homebrew already knows — formula or cask, it works
+#                    out which and writes the answer into the generated Brewfile
+#   [download.NAME]  no cask exists upstream; pin the url, version and checksum
+#   [manual.NAME]    nothing may install this for you — say what to do instead
+#
+# `mac sync` renders this into Brewfile and tap/Casks/*.rb and hands the lot to
+# Homebrew. Those generated files are committed on purpose: they are the lock,
+# so a version bump is a diff you can read.
+
+[tap]
+FelixKratz/formulae
+
+[install]
+# shell and cli
+git
+bash
+ripgrep
+fd
+neovim
+uv
+ffmpeg
+xcodegen
+
+# languages
+rustup
+go
+openjdk@17
+
+# terminal
+kitty
+font-jetbrains-mono-nerd-font
+
+# the desktop — aerospace, alttab and ainto are built from vendor/ forks
+borders
+karabiner-elements
+linearmouse
+hammerspoon
+
+# editors and office
+visual-studio-code
+obsidian
+microsoft-word
+microsoft-excel
+microsoft-powerpoint
+
+# media
+spotify
+ayugram
+easydict
+
+# ai
+claude
+claude-code
+chatgpt
+kimi-code
+lm-studio
+
+# secrets — units/secrets.zsh reads both
+bitwarden
+bitwarden-cli
+age
+
+# network
+amneziavpn
+logmein-hamachi
+sing-box
+
+# the rest
+google-drive
+android-platform-tools
+
+[download.hiddify]
+version = "4.1.1"
+url = "https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-MacOS.dmg"
+sha256 = "2019c85aef259002909a088be7bfb28032bf9ce7f932ffa597fdfe3b4cbff914"
+app = "Hiddify.app"
+desc = "Proxy client used by the private vpn tree"
+homepage = "https://hiddify.com/"
+
+[manual.xcode]
+do = "Install Xcode from the App Store, then run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && sudo xcodebuild -license accept"
+detect = "xcodebuild -version"
+
+[manual.comsol]
+do = "Licensed installer — sign in with your COMSOL account and download the macOS installer, then run it"
+url = "https://www.comsol.com/product-download"

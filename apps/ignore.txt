@@ -1,8 +1,0 @@
-# Apps deliberately left unmanaged. One name per line, reason after #.
-Xcode.app                       # App Store, needs an Apple ID
-Safari.app                      # ships with macOS
-Google Docs.app                 # shortcut created by the google-drive cask
-Google Sheets.app               # shortcut created by the google-drive cask
-Google Slides.app               # shortcut created by the google-drive cask
-Karabiner-EventViewer.app       # ships inside the karabiner-elements cask
-LogMeIn Hamachi Uninstaller.app # ships inside the logmein-hamachi cask

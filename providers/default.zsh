@@ -9,12 +9,9 @@ typeset -gA DOMAIN_APP=(
     app.ainto.macos                   Ainto
 )
 
-_def_parts() {
-    local rest=${1#default:}
-    typeset -g DEF_DOMAIN=${rest%%/*} DEF_KEY=${rest#*/}
-}
-
 _def_read() { defaults read "$1" "$2" 2>/dev/null }
+
+_def_type() { defaults read-type "$1" "$2" 2>/dev/null | sed 's/^Type is //' }
 
 _def_norm() {
     local t=$1 v=$2
@@ -25,6 +22,19 @@ _def_norm() {
         # Swift-based apps (Ainto) rewrite strings with \uXXXX escapes on quit;
         # comparing raw bytes would report eternal drift and restart them forever.
         *)     if [[ "$v" == *'\u'* ]]; then print -r -- "${(g::)v}"; else print -r -- "$v"; fi ;;
+    esac
+}
+
+_def_write() {
+    local domain=$1 key=$2 type=$3 want=$4
+    case $type in
+        array)  defaults write "$domain" "$key" -array ;;
+        bool)   defaults write "$domain" "$key" -bool "$want" ;;
+        int)    defaults write "$domain" "$key" -int "$want" ;;
+        float)  defaults write "$domain" "$key" -float "$want" ;;
+        string) defaults write "$domain" "$key" -string "$want" ;;
+        raw)    defaults write "$domain" "$key" "$want" ;;
+        *)      REASON="unknown type '$type'"; return 1 ;;
     esac
 }
 
@@ -44,26 +54,42 @@ default_check() {
     return 1
 }
 
+# The value as it stands right now, as a command that would put it back. Written
+# through read-type rather than the declared type, because what the machine holds
+# and what the repo wants are not always the same shape.
+default_undo() {
+    local id=$1 domain=${POS[1]} key=${POS[2]} cur t
+    if cur=$(_def_read "$domain" "$key"); then
+        t=$(_def_type "$domain" "$key")
+        case $t in
+            boolean) undo_push "restore $domain $key" \
+                        "defaults write ${(q)domain} ${(q)key} -bool $( [[ "$cur" == 1 ]] && print true || print false )" ;;
+            integer) undo_push "restore $domain $key" "defaults write ${(q)domain} ${(q)key} -int ${(q)cur}" ;;
+            float)   undo_push "restore $domain $key" "defaults write ${(q)domain} ${(q)key} -float ${(q)cur}" ;;
+            # Arrays and dictionaries round-trip through their plist text.
+            *)       undo_push "restore $domain $key" "defaults write ${(q)domain} ${(q)key} ${(q)cur}" ;;
+        esac
+    else
+        undo_push "unset $domain $key" "defaults delete ${(q)domain} ${(q)key} 2>/dev/null; true"
+    fi
+    return 0
+}
+
 default_apply() {
     local id=$1 domain=${POS[1]} key=${POS[2]} type=${POS[3]} want="${POS[4]:-}"
-    local cur rc app
-    case $type in
-        array)  defaults write "$domain" "$key" -array ;;
-        bool)   defaults write "$domain" "$key" -bool "$want" ;;
-        int)    defaults write "$domain" "$key" -int "$want" ;;
-        float)  defaults write "$domain" "$key" -float "$want" ;;
-        string) defaults write "$domain" "$key" -string "$want" ;;
-        raw)    defaults write "$domain" "$key" "$want" ;;
-        *)      REASON="unknown type '$type'"; return 1 ;;
-    esac
-    if (( $? != 0 )); then REASON="defaults write failed"; return 1; fi
+    local app
+    stop_owner || return 1
+    if ! _def_write "$domain" "$key" "$type" "$want"; then
+        REASON="${REASON:-defaults write failed}"
+        return 1
+    fi
 
     if ! default_check "$id"; then
         sleep 0.4
         if ! default_check "$id"; then REASON="write did not stick ($REASON)"; return 1; fi
     fi
     REASON=''
-    app="${P[affects]:-${DOMAIN_APP[$domain]:-}}"
+    app="${P[affects]:-${P[stop_app]:-${DOMAIN_APP[$domain]:-}}}"
     [[ -n "$app" ]] && needs_restart "$app"
     return 0
 }
@@ -80,18 +106,12 @@ default_down() {
     if [[ "$want" == delete ]]; then
         defaults delete "$domain" "$key" 2>/dev/null
     else
-        case $type in
-            array)  defaults write "$domain" "$key" -array ;;
-            bool)   defaults write "$domain" "$key" -bool "$want" ;;
-            int)    defaults write "$domain" "$key" -int "$want" ;;
-            float)  defaults write "$domain" "$key" -float "$want" ;;
-            string) defaults write "$domain" "$key" -string "$want" ;;
-            raw)    defaults write "$domain" "$key" "$want" ;;
-            *)      REASON="unknown type '$type'"; return 1 ;;
-        esac
-        if (( $? != 0 )); then REASON="defaults write failed"; return 1; fi
+        if ! _def_write "$domain" "$key" "$type" "$want"; then
+            REASON="${REASON:-defaults write failed}"
+            return 1
+        fi
     fi
-    app="${P[affects]:-${DOMAIN_APP[$domain]:-}}"
+    app="${P[affects]:-${P[stop_app]:-${DOMAIN_APP[$domain]:-}}}"
     [[ -n "$app" ]] && needs_restart "$app"
     REASON=''
     return 0

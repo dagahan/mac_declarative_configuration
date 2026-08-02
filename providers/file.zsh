@@ -87,6 +87,24 @@ file_check() {
     return 1
 }
 
+file_undo() {
+    local id=$1 dst st blob sudo_=''
+    dst=$(_file_dest); st=$(_file_state "$id")
+    [[ -n "${P[root]:-}" ]] && sudo_='sudo -n '
+    if [[ -e "$dst" ]]; then
+        blob=$(undo_backup "$dst") || { REASON="cannot copy $dst aside"; return 1 }
+        undo_push "restore $dst" "${sudo_}cp -p ${(q)blob} ${(q)dst}"
+    else
+        undo_push "remove $dst" "${sudo_}rm -f ${(q)dst}"
+    fi
+    if [[ -e "$st" ]] && blob=$(undo_backup "$st"); then
+        undo_push "restore fingerprint of ${dst:t}" "cp -p ${(q)blob} ${(q)st}"
+    else
+        undo_push "clear fingerprint of ${dst:t}" "rm -f ${(q)st}"
+    fi
+    return 0
+}
+
 file_apply() {
     local id=$1 dst tmp content
     dst=$(_file_dest)
@@ -98,20 +116,11 @@ file_apply() {
 
     content=$(_file_render) || return 1
 
-    # The before-image records the destination as well as the prior state: by
-    # the time we revert, the declaration is gone, so the id is all we have.
     [[ -n "${P[root]:-}" ]] || mkdir -p "${dst:h}" || { REASON="cannot create ${dst:h}"; return 1 }
-    if ! placement_exists "$id"; then
-        if [[ -e "$dst" ]]; then
-            cp -p "$dst" "$dst.pre-mac_setup" || { REASON="cannot back up $dst"; return 1 }
-            placement_save "$id" "$dst"$'\t'"backup:$dst.pre-mac_setup"
-        else
-            placement_save "$id" "$dst"$'\t'"absent"
-        fi
-    fi
 
-    # root= is for the few places only root may write, /Library/LaunchDaemons
-    # above all. Staged in /tmp first so a failed sudo cannot leave a half file.
+    # Staged beside the destination and renamed into place: a rename is atomic,
+    # so an interrupted write can never be observed as a truncated config. root=
+    # is for the few places only root may write, /Library/LaunchDaemons above all.
     tmp="${TMPDIR:-/tmp}/mac_file.$$"
     print -r -- "$content" > "$tmp" || { REASON="cannot write $tmp"; return 1 }
     chmod "$(_file_mode)" "$tmp" || { REASON="chmod failed"; rm -f "$tmp"; return 1 }
@@ -119,9 +128,10 @@ file_apply() {
         if ! sudo -n true 2>/dev/null; then
             rm -f "$tmp"; REASON="root access expired mid-run"; return 1
         fi
-        sudo -n mkdir -p "${dst:h}" && sudo -n cp "$tmp" "$dst" \
-            && sudo -n chown root:wheel "$dst" && sudo -n chmod "$(_file_mode)" "$dst" \
-            || { rm -f "$tmp"; REASON="root install failed"; return 1 }
+        sudo -n mkdir -p "${dst:h}" && sudo -n cp "$tmp" "$dst.mac-new" \
+            && sudo -n chown root:wheel "$dst.mac-new" && sudo -n chmod "$(_file_mode)" "$dst.mac-new" \
+            && sudo -n mv -f "$dst.mac-new" "$dst" \
+            || { rm -f "$tmp"; sudo -n rm -f "$dst.mac-new" 2>/dev/null; REASON="root install failed"; return 1 }
         rm -f "$tmp"
     else
         mv -f "$tmp" "$dst" || { REASON="install failed"; rm -f "$tmp"; return 1 }
@@ -129,18 +139,6 @@ file_apply() {
 
     mkdir -p "$STATE/files"
     print -r -- "$(print -r -- "$content" | _file_sha) $(_file_source_fp)" > "$(_file_state "$id")"
-    return 0
-}
-
-file_revert() {
-    local id=$1 rec dst prev
-    rec=$(placement_get "$id")
-    dst="${rec%%$'\t'*}"
-    prev="${rec#*$'\t'}"
-    [[ -n "$rec" && "$dst" != "$rec" ]] || { REASON="no record of where this file was written"; return 1 }
-    rm -f "$dst"
-    [[ "$prev" == backup:* && -e "${prev#backup:}" ]] && mv "${prev#backup:}" "$dst"
-    rm -f "$(_file_state "$id")"
     return 0
 }
 

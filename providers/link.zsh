@@ -10,28 +10,31 @@ link_check() {
     return 1
 }
 
-link_apply() {
-    local id=$1 src="$ROOT/${POS[1]}" dst="${POS[2]}"
-    [[ -e "$src" ]] || { REASON="source missing: ${POS[1]}"; return 1 }
-    mkdir -p "${dst:h}"
-    if [[ -e "$dst" && ! -L "$dst" ]]; then
-        mv "$dst" "$dst.pre-mac_setup" || { REASON="cannot back up $dst"; return 1 }
-        placement_save "$id" "backup:$dst.pre-mac_setup"
+link_undo() {
+    local id=$1 dst prev blob
+    dst="${POS[2]}"
+    if [[ -L "$dst" ]]; then
+        prev=$(readlink "$dst")
+        undo_push "relink $dst" "ln -sfn ${(q)prev} ${(q)dst}"
+    elif [[ -e "$dst" ]]; then
+        blob=$(undo_backup "$dst") || { REASON="cannot copy $dst aside"; return 1 }
+        undo_push "restore $dst" "rm -rf ${(q)dst}; cp -pR ${(q)blob} ${(q)dst}"
     else
-        placement_exists "$id" || placement_save "$id" "absent"
+        undo_push "remove $dst" "rm -f ${(q)dst}"
     fi
-    ln -sfn "$src" "$dst" || { REASON="symlink failed"; return 1 }
     return 0
 }
 
-link_revert() {
-    # Separate statements: in zsh a later assignment in the same `local` cannot
-    # see an earlier one, so `local id=$1 dst="${id#link:}"` leaves dst empty.
-    local id=$1 prev dst
-    dst="${id#link:}"
-    prev=$(placement_get "$id")
-    [[ -L "$dst" ]] && rm -f "$dst"
-    [[ "$prev" == backup:* && -e "${prev#backup:}" ]] && mv "${prev#backup:}" "$dst"
+link_apply() {
+    local id=$1 src="$ROOT/${POS[1]}" dst="${POS[2]}"
+    [[ -e "$src" ]] || { REASON="source missing: ${POS[1]}"; return 1 }
+    stop_owner || return 1
+    mkdir -p "${dst:h}"
+    # A real file in the way is moved aside rather than destroyed; undo_backup
+    # already holds a copy, so this only keeps the original out of the symlink's
+    # path without a second full copy.
+    [[ -e "$dst" && ! -L "$dst" ]] && { mv "$dst" "$dst.pre-mac_setup" || { REASON="cannot move $dst aside"; return 1 } }
+    ln -sfn "$src" "$dst" || { REASON="symlink failed"; return 1 }
     return 0
 }
 

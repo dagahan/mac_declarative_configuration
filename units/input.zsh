@@ -1,4 +1,5 @@
 requires=()
+workspace=1
 
 # Key repeat only takes full effect after a re-login; macOS offers no way to
 # apply it live, so there is nothing to restart here.

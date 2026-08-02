@@ -1,4 +1,5 @@
-requires=(brew dotfiles)
+requires=(software dotfiles)
+workspace=1
 
 # The cask registers Karabiner's launchd jobs system-wide and enabled, so the
 # remapper starts at boot no matter what this repo does. That is what makes an
