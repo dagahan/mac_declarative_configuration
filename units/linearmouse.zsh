@@ -3,7 +3,7 @@ requires=(software)
 # Deliberately outside the workspace. Pointer behaviour is not part of the
 # window-manager session: it should be there the moment you log in and it should
 # never be stopped or started by `mac workspace up` / `down`, which is why this
-# unit is not in WORKSPACE_SELECTORS and carries its own login agent.
+# unit sets no workspace= marker and carries its own login agent.
 #
 # The second plist in ~/Library/LaunchAgents, and the only one that starts
 # something. That is a deliberate exception, asked for: a mouse that stops
