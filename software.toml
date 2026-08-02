@@ -89,25 +89,12 @@ app = "Hiddify.app"
 desc = "Proxy client used by the private vpn tree"
 homepage = "https://hiddify.com/"
 
-# ── template: an app installed from a dmg link ────────────────────────────
-# Copy the block, drop the #, fill in the four required lines. Nothing else is
-# needed — `mac sync` writes the cask, and Homebrew downloads it, checks the
-# sha256, mounts the dmg, copies the app out and clears the quarantine flag.
-#
-# The checksum is what makes the link safe to trust twice. Get it with:
-#     curl -fsSL "<url>" | shasum -a 256
-# For a link that changes every download (a signed or one-shot url) there is no
-# stable checksum to pin, so write  sha256 = "no_check"  and mean it.
-#
-# [download.thing]
-# version  = "1.0.0"                     # whatever the vendor calls this build
-# url      = "https://example.com/Thing-1.0.0.dmg"
-# sha256   = "0000000000000000000000000000000000000000000000000000000000000000"
-# app      = "Thing.app"                 # the .app inside the dmg
-# pkg      = "Thing.pkg"                 # use instead of app= if it ships an installer
-# desc     = "one line, shown by brew info"
-# homepage = "https://example.com/"
-
 [manual.xcode]
 do = "Install Xcode from the App Store, then run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && sudo xcodebuild -license accept"
 detect = "xcodebuild -version"
+
+[download.newapp]
+version = "1.0.0"
+url = "PASTE-THE-DMG-LINK-HERE"
+sha256 = "no_check"
+app = "NewApp.app"
