@@ -11,7 +11,7 @@ zmodload zsh/datetime
 typeset -g STATE="${XDG_STATE_HOME:-$HOME/.local/state}/mac_setup"
 
 state_init() {
-    mkdir -p "$STATE"/{journal,cache,artifacts,pending-restart,files,daemons,builds,undo}
+    mkdir -p "$STATE"/{journal,cache,artifacts,pending-restart,files,daemons,builds,undo,downloads}
     _state_retire
 }
 
