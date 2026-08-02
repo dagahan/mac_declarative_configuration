@@ -6,6 +6,12 @@ software_check() {
     local rc
     software_render || return 1
     software_link_tap || return 2
+    # Reading a download means fetching it, so a check never does — it only says
+    # that it has not happened yet.
+    if (( ${#SW_UNRESOLVED} )); then
+        REASON="${(j:, :)SW_UNRESOLVED} not looked at yet — sync will fetch and read ${${#SW_UNRESOLVED}/#1/it}"
+        return 1
+    fi
     local secs="${P[timeout]:-300}"
     with_timeout "$secs" "brew bundle check --no-upgrade --file=${(q)BREWFILE}" >/dev/null 2>&1; rc=$?
     (( rc == 0 )) && return 0
@@ -35,13 +41,19 @@ software_undo() {
 }
 
 software_apply() {
-    local rc
-    software_render || return 1
+    local rc unread=0
     software_link_tap || return 1
+    software_learn_missing || unread=1
     sh_run "brew bundle --file=${(q)BREWFILE} --no-upgrade"; rc=$?
-    (( rc == 0 )) && { REASON=''; return 0 }
-    REASON=$(sh_tail $rc)
-    return 1
+    if (( rc != 0 )); then REASON=$(sh_tail $rc); return 1; fi
+    # Everything installable was installed; the run still failed, but it says so
+    # about the entry that could not be read rather than about all of them.
+    if (( unread )); then
+        REASON="could not read: ${(j:, :)SW_UNRESOLVED}"
+        return 1
+    fi
+    REASON=''
+    return 0
 }
 
 software_describe() { print -r -- "software.toml" }

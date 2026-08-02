@@ -2,13 +2,17 @@
 #
 #   [brew]           Homebrew formulae — command-line tools
 #   [cask]           Homebrew casks — apps with a bundle
-#   [download.NAME]  no cask exists upstream; pin the url, version and checksum
+#   [download.NAME]  no cask exists upstream — give the link, nothing else
 #   [manual.NAME]    nothing may install this for you — say what to do instead
 #
-# This is the only file to edit and the only thing that is the lock. The
-# Brewfile and the cask files `mac sync` hands to Homebrew are generated into
-# ~/.local/state/mac_setup and deliberately not kept in the repo: they say
-# nothing this file does not already say.
+# A download needs only its url. On the first sync the file is fetched once and
+# read: what it installs, what version it calls itself and what it hashes to are
+# all facts about the file, so they are taken from it and remembered rather than
+# typed in here. State any of them yourself and yours wins.
+#
+# This is the only file to edit. The Brewfile and the cask files `mac sync`
+# hands to Homebrew are generated into ~/.local/state/mac_setup and deliberately
+# not kept in the repo: they say nothing this file does not already say.
 
 [tap]
 FelixKratz/formulae
@@ -82,10 +86,7 @@ google-drive
 android-platform-tools
 
 [download.hiddify]
-version = "4.1.1"
 url = "https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-MacOS.dmg"
-sha256 = "2019c85aef259002909a088be7bfb28032bf9ce7f932ffa597fdfe3b4cbff914"
-app = "Hiddify.app"
 desc = "Proxy client used by the private vpn tree"
 homepage = "https://hiddify.com/"
 
@@ -93,8 +94,8 @@ homepage = "https://hiddify.com/"
 do = "Install Xcode from the App Store, then run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && sudo xcodebuild -license accept"
 detect = "xcodebuild -version"
 
-[download.newapp]
+[download.comsol_multiphysics]
 version = "1.0.0"
-url = "PASTE-THE-DMG-LINK-HERE"
+url = "https://download940.mediafire.com/ts7a9kik5vygFTE8I6Cw_EtgNgx96Zfm6j7u_gXK0EMvVOeypa8eH1wnQCmm__IpBlQgZ0tKiuNU9lot2xnKx-O48gDbZm5mNJTJUefA02-aRLIf19BHzl1pdlcCLw0ecZe64keDXyH2vInnN_Fl5YCCdvhvnKwH98qQrWu4Sw/6ght0hn3mz4nq93/COMSOL+Multiphysics+v6.2.339+macOS+SSQ+ARM.dmg"
 sha256 = "no_check"
 app = "NewApp.app"
