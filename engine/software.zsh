@@ -107,21 +107,170 @@ _sw_version_from_name() {
     print -r -- "$v"
 }
 
+# How big the payload is, and whether the server will let a transfer resume.
+# Sets SW_TOTAL and SW_RANGES; both are 0 when the server would not say.
+#
+# Two questions, one request where possible. A HEAD is the polite way to ask and
+# plenty of file hosts either refuse it or answer it with a redirect to
+# something that is not the file, so the fallback asks for a single byte: the
+# Content-Range in the reply carries the full size *and* proves that resuming
+# will work. Guessing that it will is how a download gets to 1.7 GiB and then
+# discovers it has to start over.
+_sw_probe() {
+    local url=$1 hdrs
+    typeset -gi SW_TOTAL=0 SW_RANGES=0
+    hdrs=$(curl -fsSLI --connect-timeout 20 --max-time 60 "$url" 2>/dev/null)
+    SW_TOTAL=$(print -r -- "$hdrs" | awk '
+        { l = tolower($0); sub(/\r$/, "", l) }
+        l ~ /^content-length:/ { n = $2 + 0 }
+        END { print n + 0 }')
+    [[ "${hdrs:l}" == *"accept-ranges: bytes"* ]] && SW_RANGES=1
+    (( SW_TOTAL > 0 && SW_RANGES )) && return 0
+
+    # --max-filesize: a host that does not do ranges answers this with the whole
+    # file, and downloading the payload twice to find out how big it is would be
+    # a strange way to save time. The headers still arrive; the body does not.
+    hdrs=$(curl -fsSL --connect-timeout 20 --max-time 60 --max-filesize 65536 \
+        -r 0-0 -o /dev/null -D - "$url" 2>/dev/null)
+    local -i n
+    n=$(print -r -- "$hdrs" | awk '
+        { l = tolower($0); sub(/\r$/, "", l) }
+        l ~ /^content-range:/ { split(l, a, "/"); n = a[2] + 0 }
+        END { print n + 0 }')
+    if (( n > 0 )); then
+        # Content-Range is both answers at once: the total after the slash, and
+        # the proof that asking for part of the file does something.
+        SW_TOTAL=$n
+        SW_RANGES=1
+        return 0
+    fi
+    if (( SW_TOTAL == 0 )); then
+        SW_TOTAL=$(print -r -- "$hdrs" | awk '
+            { l = tolower($0); sub(/\r$/, "", l) }
+            l ~ /^content-length:/ { n = $2 + 0 }
+            END { print n + 0 }')
+    fi
+    return 0
+}
+
+_sw_size() { local -a s; zstat -A s +size "$1" 2>/dev/null || return 0; print -r -- "${s[1]:-0}" }
+
+# A truncated download is the failure that looks like every other failure: the
+# unpacker just says the file is malformed. Multi-gigabyte payloads stall often
+# enough that it is worth knowing the difference, so the bytes are counted
+# against what the server promised before anything tries to open them.
+#
+# Everything slow here says which of the two slow things it is doing. "Fetching"
+# and "reading the dmg" take minutes and seconds respectively and fail for
+# unrelated reasons, and a single label over both of them was how a download
+# that never finished got reported as a mount that would not work.
+_sw_fetch() {
+    local n=$1 url=$2 part=$3 label
+    local -i want have start t0 secs attempt rc
+
+    spin_start "asking how big $n is"
+    _sw_probe "$url"
+    spin_stop
+    want=$SW_TOTAL
+
+    for attempt in 1 2; do
+        cancelled && { REASON="cancelled before $n started"; return 1 }
+        start=$(_sw_size "$part")
+        if (( want > 0 && start == want )); then
+            print -r -- "  $S_OK have $n already ${C_DIM}$(fmt_bytes $want)${C_RESET}"
+            return 0
+        fi
+        # Resuming a server that will not do ranges appends the whole file onto
+        # the bytes already there and produces a plausible-looking corrupt one,
+        # so it is only attempted when the probe saw the offer.
+        if (( start > 0 && ! SW_RANGES )); then
+            print -r -- "  $S_WARN $n cannot be resumed here — starting over"
+            : > "$part"; start=0
+        fi
+        if (( start > 0 )); then
+            label="resuming $n"
+            print -r -- "  $S_DOT resuming $n ${C_DIM}from $(fmt_bytes $start)${C_RESET}"
+        else
+            label="downloading $n"
+        fi
+
+        t0=$EPOCHSECONDS
+        prog_start "$label" "$part" "$want"
+        # -C - resumes the part file rather than starting the transfer over, and
+        # the speed floor gives up on a connection that has gone quiet instead
+        # of holding the whole sync open. -sS: no progress meter, but keep the
+        # error text — curl's own meter may never reach the terminal, so the
+        # progress line watches the part file grow instead.
+        sh_run "curl -fsSL -C - --retry 5 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 20 --speed-limit 1024 --speed-time 60 \
+            -o ${(q)part} ${(q)url}"
+        rc=$?
+        prog_stop
+        have=$(_sw_size "$part")
+
+        cancelled && {
+            REASON="cancelled — $(fmt_bytes $have) of $n kept for the next run"
+            return 1 }
+
+        # A host that dropped the connection and then refused the range request
+        # has stranded whatever was already fetched. Nothing is recoverable from
+        # those bytes, but the download itself still is — once, from zero.
+        local low="${LAST_OUTPUT:l}"
+        if (( rc != 0 )) && [[ "$low" == *"cannot resume"* || "$low" == *"byte ranges"* \
+                            || "$low" == *"416"* ]]; then
+            if (( attempt == 1 )); then
+                print -r -- "  $S_WARN $n refused to resume — starting over from zero"
+                : > "$part"
+                SW_RANGES=0
+                continue
+            fi
+        fi
+        (( rc != 0 )) && { REASON="cannot fetch $n — $(sh_tail $rc)"; return 1 }
+
+        if (( want > 0 && have != want )); then
+            if (( attempt == 1 )); then
+                print -r -- "  $S_WARN $n came back the wrong size — starting over from zero"
+                : > "$part"
+                continue
+            fi
+            REASON="incomplete download for $n — got $(fmt_bytes $have) of $(fmt_bytes $want)"
+            return 1
+        fi
+        (( have > 0 )) || { REASON="cannot fetch $n — empty response"; return 1 }
+
+        secs=$(( EPOCHSECONDS - t0 ))
+        if (( secs > 0 )); then
+            print -r -- "  $S_OK downloaded $n — $(fmt_bytes $have) ${C_DIM}in $(fmt_dur $secs) · $(fmt_bytes $(( (have - start) / secs )))/s${C_RESET}"
+        else
+            print -r -- "  $S_OK downloaded $n — $(fmt_bytes $have)"
+        fi
+        return 0
+    done
+    REASON="${REASON:-cannot fetch $n}"
+    return 1
+}
+
 # Mounts the payload, notes what it holds, and unmounts again. Nothing is
 # installed here; the only thing produced is knowledge.
 _sw_learn() {
-    local n=$1 url file mnt found kind ver sha out rc
+    local n=$1 url file part mnt found kind ver sha out rc
+    typeset -g SW_INSIDE=''
     url=$(sw_attr download "$n" url)
     [[ -n "$url" ]] || { REASON="[download.$n] has no url"; return 1 }
     mkdir -p "$STATE/downloads" "$STATE/cache"
     file="$STATE/cache/learn-$n"
+    part="$file.part"
+    # A payload kept by an earlier run that could not read it goes back to being
+    # the part file, where the size check finds it already complete and skips
+    # the download entirely.
+    [[ -f "$file" && ! -f "$part" ]] && mv -f "$file" "$part"
     rm -f "$file"
-    # -sS: no progress meter, but keep the error text. The meter is one enormous
-    # line of carriage returns, and it is the only thing the failure reason
-    # would otherwise have to quote.
-    sh_run "curl -fsSL --retry 2 --connect-timeout 20 -o ${(q)file} ${(q)url}" || {
-        REASON="cannot fetch $n — $(sh_tail)"; rm -f "$file"; return 1 }
+    # The part file deliberately outlives a failure: the next run resumes it
+    # rather than fetching the same gigabytes again.
+    _sw_fetch "$n" "$url" "$part" || return 1
+    mv -f "$part" "$file" || { REASON="cannot fetch $n — $part is not readable"; return 1 }
 
+    spin_start "reading $n"
     case "${url:l}" in
         *.zip|*.tar.gz|*.tgz)
             out="$STATE/cache/learn-$n.d"
@@ -136,26 +285,53 @@ _sw_learn() {
             found="$file"; kind=pkg
             ;;
         *)
+            # A UDIF image ends in its koly trailer. Checking for it separates
+            # "this is not the disk image the link promised" from the mount
+            # failures worth reading hdiutil's own words about.
+            if [[ "$(tail -c 512 "$file" | head -c 4)" != koly ]]; then
+                REASON="not a disk image: $n — the url did not serve a dmg"
+                rm -f "$file"; return 1
+            fi
             mnt=$(mktemp -d)
-            sh_run "hdiutil attach ${(q)file} -mountpoint ${(q)mnt} -nobrowse -readonly -quiet" || {
-                REASON="cannot mount the dmg for $n"; rm -rf "$mnt" "$file"; return 1 }
-            found=$(find "$mnt" -maxdepth 2 -name '*.app' -print -quit 2>/dev/null); kind=app
-            [[ -n "$found" ]] || { found=$(find "$mnt" -maxdepth 2 -name '*.pkg' -print -quit 2>/dev/null); kind=pkg }
+            # Not -quiet: on failure hdiutil's stderr is the only account of why,
+            # and suppressing it leaves the journal with nothing to show.
+            sh_run "hdiutil attach ${(q)file} -mountpoint ${(q)mnt} -nobrowse -readonly" || {
+                REASON="cannot mount the dmg for $n — $(sh_tail)"; rm -rf "$mnt" "$file"; return 1 }
+            # Depth 4, not 2: a big installer is regularly a folder of parts with
+            # the bundle one or two levels down, and refusing to look was read as
+            # the image containing nothing at all.
+            found=$(find "$mnt" -maxdepth 4 -name '*.app' -print -quit 2>/dev/null); kind=app
+            [[ -n "$found" ]] || { found=$(find "$mnt" -maxdepth 4 -name '*.pkg' -print -quit 2>/dev/null); kind=pkg }
             [[ -n "$found" && "$kind" == app ]] && \
                 ver=$(defaults read "$found/Contents/Info" CFBundleShortVersionString 2>/dev/null)
+            # What is actually in there, for when none of it is installable. The
+            # listing is the whole difference between "this needs a look" and
+            # knowing what to write in software.toml.
+            [[ -n "$found" ]] || SW_INSIDE=$(ls -A "$mnt" 2>/dev/null | head -8 | tr '\n' ' ')
             sh_run "hdiutil detach ${(q)mnt} -quiet"
             rmdir "$mnt" 2>/dev/null
             ;;
     esac
     if [[ -z "$found" ]]; then
         REASON="nothing installable inside $n — no .app and no .pkg"
-        rm -rf "$file" "$STATE/cache/learn-$n.d"
+        [[ -n "$SW_INSIDE" ]] && REASON+=" · it holds: ${SW_INSIDE% }"
+        # The payload stays. It is the expensive thing in this whole operation
+        # and there is nothing wrong with it — what is missing is a line in
+        # software.toml saying what to install out of it, and re-fetching
+        # gigabytes to try that again would be an absurd price for a one-word
+        # edit.
+        journal "learn $n found nothing installable; kept $file"
+        rm -rf "$STATE/cache/learn-$n.d"
         return 1
     fi
     [[ "$kind" == app && -z "$ver" && -d "$found" ]] && \
         ver=$(defaults read "$found/Contents/Info" CFBundleShortVersionString 2>/dev/null)
     [[ -n "$ver" ]] || ver=$(_sw_version_from_name "$url")
+    # Its own stage: hashing gigabytes is slow enough that under the "reading"
+    # label it looks like the mount has hung.
+    spin_start "checksumming $n"
     sha=$(shasum -a 256 "$file" | cut -d' ' -f1)
+    spin_start "handing $n to homebrew"
 
     {
         print -r -- "url=$url"
@@ -304,9 +480,11 @@ software_render() {
 software_learn_missing() {
     local n rc=0
     software_render || return 1
+    # No spinner here: _sw_learn names each of its own stages, and one label
+    # spanning a download, a mount and a checksum told you only that something
+    # was happening somewhere.
     for n in "${SW_UNRESOLVED[@]}"; do
         cancelled && return 1
-        spin_start "looking inside $n"
         if _sw_learn "$n"; then
             spin_stop
             print -r -- "  $S_OK read $n — $(sw_field "$n" app)$(sw_field "$n" pkg) ${C_DIM}$(sw_field "$n" version)${C_RESET}"
@@ -315,6 +493,7 @@ software_learn_missing() {
             print -r -- "  $S_BAD $n — ${REASON}"
             rc=1
         fi
+        cancelled && return 1
     done
     # Re-rendered so the Brewfile picks up whatever was just learned and leaves
     # out whatever was not: one unreadable entry must not stop everything else

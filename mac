@@ -63,11 +63,14 @@ done
 [[ -z "$CMD" ]] && { usage; exit 0 }
 
 journal_open "$CMD" "${ARGV[@]}"
+tty_save
 
 # Every exit path — a clean return, a die, a ^C that fell through — puts the
-# cursor back and unwinds anything still mid-write.
+# cursor back, hands the terminal back as it was found, and unwinds anything
+# still mid-write.
 TRAPEXIT() {
     spin_stop
+    tty_restore
     undo_rollback
     lock_release
 }

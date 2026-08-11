@@ -14,3 +14,6 @@ alias mac-sync="$HOME/mac_setup/mac sync"
 export PATH="$PATH:/Users/nick/.lmstudio/bin"
 # End of LM Studio CLI section
 
+
+# Added by Hermes Agent install
+export PATH="$HOME/.local/bin:$PATH"

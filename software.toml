@@ -2,17 +2,13 @@
 #
 #   [brew]           Homebrew formulae — command-line tools
 #   [cask]           Homebrew casks — apps with a bundle
-#   [download.NAME]  no cask exists upstream — give the link, nothing else
+#   [download.NAME]  no cask exists upstream; pin the url, version and checksum
 #   [manual.NAME]    nothing may install this for you — say what to do instead
 #
-# A download needs only its url. On the first sync the file is fetched once and
-# read: what it installs, what version it calls itself and what it hashes to are
-# all facts about the file, so they are taken from it and remembered rather than
-# typed in here. State any of them yourself and yours wins.
-#
-# This is the only file to edit. The Brewfile and the cask files `mac sync`
-# hands to Homebrew are generated into ~/.local/state/mac_setup and deliberately
-# not kept in the repo: they say nothing this file does not already say.
+# This is the only file to edit and the only thing that is the lock. The
+# Brewfile and the cask files `mac sync` hands to Homebrew are generated into
+# ~/.local/state/mac_setup and deliberately not kept in the repo: they say
+# nothing this file does not already say.
 
 [tap]
 FelixKratz/formulae
@@ -32,6 +28,12 @@ xcodegen
 rustup
 go
 openjdk@17
+# 21, not 17: super-productivity's android build compiles at JavaVersion.VERSION_21
+openjdk@21
+# keg-only on purpose: node 26 arrives as a dependency of bitwarden-cli and
+# kimi-code, so nothing shadows it. Prepend the opt/bin to PATH where 22 is
+# wanted — super-productivity pins it in .nvmrc.
+node@22
 
 # focused-window outline daemon (config/borders/bordersrc)
 borders
@@ -83,19 +85,15 @@ logmein-hamachi
 
 # the rest
 google-drive
+# adb; the sdk itself comes from android-studio's first-run wizard
 android-platform-tools
+android-studio
 
 [download.hiddify]
 url = "https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-MacOS.dmg"
+sha256 = "2019c85aef259002909a088be7bfb28032bf9ce7f932ffa597fdfe3b4cbff914"
 desc = "Proxy client used by the private vpn tree"
-homepage = "https://hiddify.com/"
 
 [manual.xcode]
 do = "Install Xcode from the App Store, then run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && sudo xcodebuild -license accept"
 detect = "xcodebuild -version"
-
-[download.comsol_multiphysics]
-version = "1.0.0"
-url = "https://download940.mediafire.com/ts7a9kik5vygFTE8I6Cw_EtgNgx96Zfm6j7u_gXK0EMvVOeypa8eH1wnQCmm__IpBlQgZ0tKiuNU9lot2xnKx-O48gDbZm5mNJTJUefA02-aRLIf19BHzl1pdlcCLw0ecZe64keDXyH2vInnN_Fl5YCCdvhvnKwH98qQrWu4Sw/6ght0hn3mz4nq93/COMSOL+Multiphysics+v6.2.339+macOS+SSQ+ARM.dmg"
-sha256 = "no_check"
-app = "NewApp.app"
