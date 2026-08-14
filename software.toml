@@ -18,6 +18,7 @@ FelixKratz/formulae
 git
 bash
 ripgrep
+tmux
 fd
 neovim
 uv
@@ -34,6 +35,9 @@ openjdk@21
 # kimi-code, so nothing shadows it. Prepend the opt/bin to PATH where 22 is
 # wanted — super-productivity pins it in .nvmrc.
 node@22
+# not corepack: node 25 unbundled it, and the two conflict over the `pnpm` and
+# `pnpx` binaries. projects asking for `corepack enable pnpm` are served by this.
+pnpm
 
 # focused-window outline daemon (config/borders/bordersrc)
 borders
