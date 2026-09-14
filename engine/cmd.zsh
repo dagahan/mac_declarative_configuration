@@ -313,6 +313,150 @@ cmd_sync() {
     return $rc
 }
 
+cmd_update() {
+    local name kind rc
+    software_load
+    for name in "$@"; do
+        software_declares "$name" || die "'$name' is not in software.toml"
+    done
+    typeset -ga UPDATE_NAMES; UPDATE_NAMES=("$@")
+    lock_acquire
+    journal_open update "$@"
+
+    spin_start "asking Homebrew what is new"
+    sh_run "brew update"; rc=$?
+    cancelled && { spin_stop; _update_footer; return 130 }
+    if (( rc != 0 )); then
+        spin_stop
+        print -r -- "  $S_BAD cannot reach Homebrew — nothing upgraded ${C_DIM}— $(sh_tail $rc)${C_RESET}"
+        return 1
+    fi
+    software_outdated "$@"; rc=$?
+    cancelled && { spin_stop; _update_footer; return 130 }
+    if (( rc != 0 )); then
+        spin_stop
+        print -r -- "  $S_BAD Homebrew would not say what is outdated — nothing upgraded"
+        return 1
+    fi
+    local -a open queue
+    open=(${(f)"$(software_open_casks "${SW_STALE_CASK[@]}")"})
+    spin_stop
+    cancelled && { _update_footer; return 130 }
+
+    for name in "${SW_STALE_BREW[@]}"; do queue+=(formula "$name"); done
+    for name in "${SW_STALE_CASK[@]}"; do
+        (( ${open[(Ie)$name]} )) || queue+=(cask "$name")
+    done
+
+    typeset -gi UPDATE_DONE=0 UPDATE_FAILED=0 UPDATE_SKIPPED=$(( ${#open} + ${#SW_SELF_UPDATING} + ${#SW_STALE_PINNED} ))
+    if (( ${#queue} )); then
+        hdr "outdated ($(( ${#queue} / 2 )))"
+        for kind name in "${queue[@]}"; do row "$kind" "$name" "$(_update_versions "$name")"; done
+        print -r -- ""
+        for kind name in "${queue[@]}"; do
+            cancelled && break
+            if _update_one "$kind" "$name"; then
+                (( UPDATE_DONE++ ))
+            elif ! cancelled; then
+                (( UPDATE_FAILED++ ))
+            fi
+        done
+    elif (( UPDATE_SKIPPED == 0 )); then
+        print -r -- ""
+        print -r -- "  $S_OK everything in software.toml is current"
+    fi
+
+    cancelled || _update_left_alone "${open[@]}"
+    cancelled || _update_apple
+    _update_footer
+}
+
+_update_versions() { print -r -- "${SW_STALE_FROM[$1]} → ${SW_STALE_TO[$1]}" }
+
+_update_one() {
+    local kind=$1 name=$2 rc
+    REASON=''
+    prog_start_glob "upgrading $name" \
+        "${HOMEBREW_CACHE:-$HOME/Library/Caches/Homebrew}/downloads/*.incomplete"
+    sh_run "HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade --$kind ${(q)name}"; rc=$?
+    prog_stop
+    if cancelled; then
+        print -r -- "  ${C_YEL}^C${C_RESET} $kind $name ${C_DIM}— interrupted${C_RESET}"
+        journal "cancel update $name"
+        return 1
+    fi
+    if (( rc != 0 )); then
+        REASON=$(sh_tail $rc)
+    elif ! software_is_current "$kind" "$name"; then
+        REASON="Homebrew says it upgraded, but it is still outdated"
+    fi
+    if [[ -n "$REASON" ]]; then
+        print -r -- "  $S_BAD ${C_BOLD}$kind $name${C_RESET} — $REASON"
+        journal "update $name FAILED $REASON"
+        return 1
+    fi
+    print -r -- "  $S_OK $kind $name ${C_DIM}$(_update_versions "$name")${C_RESET}"
+    journal "update $name ok"
+}
+
+_update_left_alone() {
+    local -a open; open=("$@")
+    local name
+    local -a urls
+    for name in "${SW_DOWNLOAD[@]}"; do
+        (( ${#UPDATE_NAMES} )) && ! _sw_in "$name" "${UPDATE_NAMES[@]}" && continue
+        urls+=("$name")
+    done
+    if (( UPDATE_SKIPPED )); then
+        hdr "left alone ($UPDATE_SKIPPED)"
+        for name in "${open[@]}"; do
+            row open "$name" "$(_update_versions "$name") · quit it, then mac update ${name:t}"
+        done
+        for name in "${SW_SELF_UPDATING[@]}"; do
+            row itself "$name" "$(_update_versions "$name") · updates itself"
+        done
+        for name in "${SW_STALE_PINNED[@]}"; do
+            row pinned "$name" "$(_update_versions "$name") · brew unpin ${name:t} to let it move"
+        done
+    fi
+    (( ${#urls} && ! UPDATE_SKIPPED )) && print -r -- ""
+    for name in "${urls[@]}"; do
+        dim "    $name is pinned by its url in software.toml — change the url to update it"
+    done
+}
+
+_update_apple() {
+    local rc
+    local -a titles
+    print -r -- ""
+    spin_start "asking Apple about macOS"
+    sh_run "softwareupdate --list"; rc=$?
+    spin_stop
+    cancelled && return
+    titles=(${(uf)"$(print -r -- "$LAST_OUTPUT" | sed -n 's/^[[:space:]]*Title: \(.*\), Version: .*/\1/p')"})
+    if (( ${#titles} )); then
+        print -r -- "  $S_WARN from Apple: ${(j: · :)titles} ${C_DIM}— System Settings › General › Software Update${C_RESET}"
+    elif [[ "$LAST_OUTPUT" == *"No new software available"* ]]; then
+        print -r -- "  $S_OK macOS is up to date"
+    else
+        print -r -- "  $S_WARN could not ask Apple about macOS ${C_DIM}— $(sh_tail $rc)${C_RESET}"
+    fi
+}
+
+_update_footer() {
+    print -r -- ""
+    if cancelled; then
+        print -r -- "  ${C_YEL}cancelled${C_RESET} · ${UPDATE_DONE:-0} updated before it stopped"
+        return 130
+    fi
+    print -r -- "  $UPDATE_DONE updated · $UPDATE_FAILED failed · $UPDATE_SKIPPED skipped"
+    if (( UPDATE_FAILED )); then
+        print -r -- "  ${C_DIM}journal: ${JOURNAL:t}${C_RESET}"
+        return 2
+    fi
+    return 0
+}
+
 cmd_tree() {
     build_graph; topo
     local u dep id

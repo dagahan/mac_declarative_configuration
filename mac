@@ -26,6 +26,9 @@ usage() {
   commands
     check [unit...]     plan only — pure, offline, changes nothing
     sync  [unit...]     converge the machine to the repo
+    update [package...]
+                        refresh Homebrew and upgrade what software.toml declares ·
+                        open apps are left for later · macOS is reported, never installed
     workspace <up|down|reload>
                         the desktop: start it · stop it and hand the mac back ·
                         both, in that order. never builds — that is sync's job
@@ -80,6 +83,7 @@ undo_recover
 case "$CMD" in
     check)   cmd_check   "${ARGV[@]}" ;;
     sync)    cmd_sync    "${ARGV[@]}" ;;
+    update)  cmd_update  "${ARGV[@]}" ;;
     tree)    cmd_tree    "${ARGV[@]}" ;;
     list)    cmd_list    "${ARGV[@]}" ;;
     secret)  cmd_secret  "${ARGV[@]}" ;;

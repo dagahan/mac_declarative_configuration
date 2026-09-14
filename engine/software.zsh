@@ -501,3 +501,97 @@ software_learn_missing() {
     software_render || return 1
     return $rc
 }
+
+# ── staying current ───────────────────────────────────────────────────────
+
+typeset -ga SW_STALE_BREW SW_STALE_CASK SW_STALE_PINNED SW_SELF_UPDATING
+typeset -gA SW_STALE_FROM SW_STALE_TO
+
+# Homebrew prints tap packages by full name; software.toml may use either.
+_sw_same_package() { [[ "${1:t}" == "${2:t}" ]] }
+
+_sw_in() {
+    local name=$1 entry; shift
+    for entry in "$@"; do
+        _sw_same_package "$name" "$entry" && return 0
+    done
+    return 1
+}
+
+software_declares() {
+    software_load
+    _sw_in "$1" "${SW_BREW[@]}" "${SW_CASK[@]}" "${SW_DOWNLOAD[@]}"
+}
+
+# Reads Homebrew's local list only, so it is as fresh as the last `brew update`.
+# With names, only those packages are considered.
+software_outdated() {
+    local -a wanted; wanted=("$@")
+    local everything plain_casks line name
+    software_load
+    SW_STALE_BREW=(); SW_STALE_CASK=(); SW_STALE_PINNED=(); SW_SELF_UPDATING=()
+    SW_STALE_FROM=(); SW_STALE_TO=()
+    everything=$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --verbose --greedy-auto-updates 2>/dev/null) || return 1
+    plain_casks=$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --cask --quiet 2>/dev/null) || return 1
+    local -a not_self_updating; not_self_updating=(${(f)plain_casks})
+    for line in ${(f)everything}; do
+        [[ "$line" =~ '^([^ ]+) \((.*)\) (<|!=) ([^ ]+)' ]] || continue
+        name=$match[1]
+        (( ${#wanted} )) && ! _sw_in "$name" "${wanted[@]}" && continue
+        SW_STALE_FROM[$name]=$match[2]
+        SW_STALE_TO[$name]=$match[4]
+        if [[ $match[3] == '<' ]]; then
+            _sw_in "$name" "${SW_BREW[@]}" || continue
+            if [[ "$line" == *'[pinned at '* ]]; then
+                SW_STALE_PINNED+=("$name")
+            else
+                SW_STALE_BREW+=("$name")
+            fi
+        else
+            _sw_in "$name" "${SW_CASK[@]}" || continue
+            if (( ${not_self_updating[(Ie)$name]} )); then
+                SW_STALE_CASK+=("$name")
+            else
+                SW_SELF_UPDATING+=("$name")
+            fi
+        fi
+    done
+    return 0
+}
+
+software_is_current() {
+    HOMEBREW_NO_AUTO_UPDATE=1 brew outdated "--$1" --quiet "$2" >/dev/null 2>&1
+}
+
+# Upgrading a cask runs its uninstall stanza, which can quit the app or unload
+# the daemon carrying a VPN's tunnel. Unknown ownership counts as open.
+software_open_casks() {
+    (( $# )) || return 0
+    local open
+    open=$(HOMEBREW_NO_AUTO_UPDATE=1 brew info --cask --json=v2 "$@" 2>/dev/null | python3 -c '
+import json, os, plistlib, subprocess, sys
+
+def run(*argv):
+    return subprocess.run(argv, capture_output=True).stdout
+
+running = set(run("ps", "-axo", "comm=").decode().splitlines())
+for cask in json.load(sys.stdin)["casks"]:
+    bundles, files = [], set()
+    for artifact in cask.get("artifacts", []):
+        if "app" in artifact and artifact.get("target"):
+            bundles.append(artifact["target"].rstrip("/") + "/")
+        for stanza in artifact.get("uninstall", []):
+            receipts = stanza.get("pkgutil", []) if isinstance(stanza, dict) else []
+            for receipt in [receipts] if isinstance(receipts, str) else receipts:
+                info = run("pkgutil", "--pkg-info-plist", receipt)
+                if not info:
+                    continue
+                info = plistlib.loads(info)
+                root = os.path.join(info.get("volume", "/"), info.get("install-location", ""))
+                for path in run("pkgutil", "--files", receipt).decode().splitlines():
+                    files.add(os.path.normpath(os.path.join(root, path)))
+    if any(exe in files or exe.startswith(tuple(bundles)) for exe in running):
+        print(cask["token"])
+') || { print -rl -- "$@"; return 0 }
+    print -r -- "$open"
+}
