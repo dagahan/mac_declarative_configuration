@@ -6,7 +6,7 @@ _build_tree() {
     local dir="$ROOT/$1" idx tree
     idx="${TMPDIR:-/tmp}/mac_setup-idx.$$"
     rm -f "$idx"
-    tree=$( GIT_INDEX_FILE="$idx" git -C "$dir" add -A 2>/dev/null \
+    tree=$( GIT_INDEX_FILE="$idx" git -C "$dir" add -A -- . 2>/dev/null \
             && GIT_INDEX_FILE="$idx" git -C "$dir" write-tree 2>/dev/null )
     rm -f "$idx"
     [[ -n "$tree" ]] && { print -r -- "$tree"; return 0 }
