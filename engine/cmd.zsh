@@ -279,6 +279,7 @@ cmd_check() {
     if (( PLAN_CHANGES == 0 )); then
         print -r -- ""
         print -r -- "  $S_OK $PLAN_OK converged$( (( PLAN_MANUAL )) && print -n " · $PLAN_MANUAL for you to do")"
+        _hint_outdated
         return 0
     fi
     print -r -- ""
@@ -286,6 +287,7 @@ cmd_check() {
     (( PLAN_DRIFT ))   && summary="$PLAN_DRIFT change(s)"
     (( PLAN_UNKNOWN )) && summary="${summary:+$summary · }$PLAN_UNKNOWN unknown"
     print -r -- "  $summary · run ${C_BOLD}mac sync${C_RESET} to apply"
+    _hint_outdated
     return 1
 }
 
@@ -303,6 +305,7 @@ cmd_sync() {
         print -r -- ""
         print -r -- "  $S_OK $PLAN_OK converged — nothing to do"
         os_build_record
+        _hint_outdated
         return 0
     fi
     print -r -- ""
@@ -310,7 +313,14 @@ cmd_sync() {
     os_build_record
     local rc=0
     render_result || rc=$?
+    cancelled || _hint_outdated
     return $rc
+}
+
+# Converged means installed, not current; sync never upgrades.
+_hint_outdated() {
+    (( ${SELECTED[(Ie)software:all]} )) || return 0
+    software_outdated_hint
 }
 
 cmd_update() {

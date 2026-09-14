@@ -595,3 +595,20 @@ for cask in json.load(sys.stdin)["casks"]:
 ') || { print -rl -- "$@"; return 0 }
     print -r -- "$open"
 }
+
+software_outdated_hint() {
+    spin_start "asking Homebrew's local list what is outdated"
+    software_outdated; local rc=$?
+    spin_stop
+    (( rc == 0 )) || return 0
+    local -i count=$(( ${#SW_STALE_BREW} + ${#SW_STALE_CASK} ))
+    (( count )) || return 0
+    local cache="${HOMEBREW_CACHE:-$HOME/Library/Caches/Homebrew}/api"
+    local -a index mtime
+    index=("$cache"/internal/packages.*.jws.json(Nom[1]) "$cache"/formula.jws.json(N))
+    local age=''
+    if (( ${#index} )) && zstat -A mtime +mtime "${index[1]}" 2>/dev/null; then
+        age=" ${C_DIM}(Homebrew's list from $(fmt_dur $(( EPOCHSECONDS - mtime[1] ))) ago)${C_RESET}"
+    fi
+    print -r -- "  $S_WARN $count outdated · run ${C_BOLD}mac update${C_RESET}$age"
+}
