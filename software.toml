@@ -51,6 +51,8 @@ sing-box
 
 # ai
 kimi-code
+# code-quorum's openrouter council seat
+opencode
 
 [cask]
 # terminal
@@ -79,6 +81,9 @@ claude
 claude-code
 chatgpt
 lm-studio
+# code-quorum council seats: codex exec and agy under seatbelt
+codex
+antigravity-cli
 
 # secrets
 bitwarden
