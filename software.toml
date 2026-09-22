@@ -54,6 +54,11 @@ kimi-code
 # code-quorum's openrouter council seat
 opencode
 
+# twist-game speech sidecar (~/myprojects/twist-game/ears): the library and its build tools
+whisper.cpp
+cmake
+pkgconf
+
 [cask]
 # terminal
 kitty
