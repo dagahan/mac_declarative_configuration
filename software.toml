@@ -71,6 +71,9 @@ microsoft-word
 microsoft-excel
 microsoft-powerpoint
 
+# game engine — ~/myprojects/twist-game, GDScript driven from the cli
+godot
+
 # media
 spotify
 ayugram
