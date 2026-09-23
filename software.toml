@@ -42,6 +42,11 @@ pnpm
 # focused-window outline daemon (config/borders/bordersrc)
 borders
 
+# containers — cli only, no Docker Desktop; colima runs the daemon in a Lima VM
+docker
+docker-compose
+colima
+
 # secrets — units/secrets.zsh reads both
 bitwarden-cli
 age
@@ -80,6 +85,7 @@ microsoft-powerpoint
 godot
 
 # media
+vlc
 spotify
 ayugram
 easydict
@@ -98,6 +104,7 @@ bitwarden
 # network
 amneziavpn
 logmein-hamachi
+tailscale-app
 
 # the rest
 google-drive
