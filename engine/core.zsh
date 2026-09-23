@@ -100,6 +100,10 @@ typeset -g SH_CHILD=''
 
 sh_run() {
     local rc out
+    # Homebrew's sudo reads /dev/tty even with stdin redirected. Its password
+    # prompt is captured below, so nobody can see or answer it. Fail promptly
+    # unless the user has configured an askpass helper (or cached credentials).
+    local -x SUDO_ASKPASS="${SUDO_ASKPASS:-/usr/bin/false}"
     out="${TMPDIR:-/tmp}/mac_run.$$.$RANDOM"
     eval "$@" >"$out" 2>&1 </dev/null &
     SH_CHILD=$!
@@ -121,6 +125,12 @@ sh_kill_child() {
 # The last couple of meaningful lines, for a one-line failure reason.
 sh_tail() {
     local t
+    if [[ "$LAST_OUTPUT" == *"sudo:"* &&
+          ( "$LAST_OUTPUT" == *"no password was provided"* ||
+            "$LAST_OUTPUT" == *"a password is required"* ) ]]; then
+        print -r -- "administrator authentication required — run the Homebrew command directly in a terminal, then retry mac"
+        return
+    fi
     t=$(print -r -- "$LAST_OUTPUT" | grep -v '^[[:space:]]*$' | tail -2 | tr '\n' ' ')
     print -r -- "${t:-exit ${1:-1}}"
 }
