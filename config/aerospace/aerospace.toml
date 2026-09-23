@@ -51,13 +51,21 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 # Also see: https://nikitabobko.github.io/AeroSpace/goodies#disable-hide-app
 automatically-unhide-macos-hidden-apps = false
 
-# List of workspaces that should stay alive even when they contain no windows,
-# even when they are invisible.
-# This config option is only available since 'config-version = 2'
-# Fallback value (if you omit the key): persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-persistent-workspaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+# Every monitor owns its own workspaces 1-0, named <monitor-key>-<number>: 3996-3 is
+# workspace 3 of the monitor with serial 3996, builtin-7 is the laptop panel's 7. A bare
+# number means the focused monitor's (workspace 3) or the window's monitor's
+# (move-node-to-workspace 3). A connected monitor always keeps its ten, so nothing else
+# needs to be persistent.
+per-monitor-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+persistent-workspaces = []
 
+# Matched by number, so every monitor's 1 is floating.
 floating-workspaces = ["1"]
+
+# A monitor that disappears keeps its windows this long before they join the nearest
+# monitor's same-numbered workspace as one stacked column. A reseated cable costs nothing,
+# and when the last monitor leaves the laptop panel has time to light up first.
+unplugged-monitor-grace-seconds = 3
 
 # Push the focused workspace to AltTab, which watches this file. The line carries the answer rather
 # than acting as a bare nudge on purpose: right after a workspace switch the aerospace CLI takes
@@ -143,7 +151,8 @@ gaps.outer.right =      0
     # Swallow cmd+m: minimize is banned on tiling workspaces
     cmd-m = 'exec-and-forget true'
     # smart-open: new Finder window here if running, else launch (Spotlight stays for search)
-    alt-shift-f = 'smart-open Finder'
+    # (on E: option+shift+F carries a window to monitor F)
+    alt-shift-e = 'smart-open Finder'
 
     alt-left = 'focus left'
     alt-down = 'focus down'
@@ -199,8 +208,26 @@ gaps.outer.right =      0
     alt-shift-8 = 'move-node-to-workspace 8'
     alt-shift-9 = 'move-node-to-workspace 9'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#move-workspace-to-monitor
-    alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+    # Monitors by where they sit: D left, F right (S D F G for up to four in the top row),
+    # C V below them (the laptop when its panel is on). Double-tap a letter to pin that
+    # monitor: option+shift+N then sends the window to the pinned monitor's N.
+    alt-s = 'focus-monitor letter:s'
+    alt-d = 'focus-monitor letter:d'
+    alt-f = 'focus-monitor letter:f'
+    alt-g = 'focus-monitor letter:g'
+    alt-x = 'focus-monitor letter:x'
+    alt-c = 'focus-monitor letter:c'
+    alt-v = 'focus-monitor letter:v'
+    alt-b = 'focus-monitor letter:b'
+    alt-shift-s = 'move-node-to-monitor --focus-follows-window letter:s'
+    alt-shift-d = 'move-node-to-monitor --focus-follows-window letter:d'
+    alt-shift-f = 'move-node-to-monitor --focus-follows-window letter:f'
+    alt-shift-g = 'move-node-to-monitor --focus-follows-window letter:g'
+    alt-shift-x = 'move-node-to-monitor --focus-follows-window letter:x'
+    alt-shift-c = 'move-node-to-monitor --focus-follows-window letter:c'
+    alt-shift-v = 'move-node-to-monitor --focus-follows-window letter:v'
+    alt-shift-b = 'move-node-to-monitor --focus-follows-window letter:b'
+    alt-esc = 'pin-monitor off'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#mode
     alt-shift-semicolon = 'mode service'
@@ -225,6 +252,23 @@ gaps.outer.right =      0
     alt-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
     cmd-q = 'close'
     alt-w = 'close --quit-if-last-window'
+    alt-s = 'focus-monitor letter:s'
+    alt-d = 'focus-monitor letter:d'
+    alt-f = 'focus-monitor letter:f'
+    alt-g = 'focus-monitor letter:g'
+    alt-x = 'focus-monitor letter:x'
+    alt-c = 'focus-monitor letter:c'
+    alt-v = 'focus-monitor letter:v'
+    alt-b = 'focus-monitor letter:b'
+    alt-shift-s = 'move-node-to-monitor --focus-follows-window letter:s'
+    alt-shift-d = 'move-node-to-monitor --focus-follows-window letter:d'
+    alt-shift-f = 'move-node-to-monitor --focus-follows-window letter:f'
+    alt-shift-g = 'move-node-to-monitor --focus-follows-window letter:g'
+    alt-shift-x = 'move-node-to-monitor --focus-follows-window letter:x'
+    alt-shift-c = 'move-node-to-monitor --focus-follows-window letter:c'
+    alt-shift-v = 'move-node-to-monitor --focus-follows-window letter:v'
+    alt-shift-b = 'move-node-to-monitor --focus-follows-window letter:b'
+    alt-esc = 'pin-monitor off'
     alt-shift-0 = 'move-node-to-workspace 0'
     alt-shift-1 = 'move-node-to-workspace 1'
     alt-shift-2 = 'move-node-to-workspace 2'
