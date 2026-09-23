@@ -10,6 +10,64 @@
             "complex_modifications": {
                 "rules": [
                     {
+                        "description": "InputLock: Right Shift + Delete locks all input, and unlocks it again (first, so it wins over everything below)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "delete_or_backspace",
+                                    "modifiers": { "mandatory": ["right_shift"], "optional": ["caps_lock"] }
+                                },
+                                "conditions": [{ "type": "variable_unless", "name": "inputlock_locked", "value": 1 }],
+                                "to": [
+                                    { "set_variable": { "name": "inputlock_locked", "value": 1 } },
+                                    { "shell_command": "/Applications/InputLock.app/Contents/MacOS/InputLock lock" }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "delete_or_backspace",
+                                    "modifiers": { "mandatory": ["right_shift"], "optional": ["caps_lock"] }
+                                },
+                                "conditions": [{ "type": "variable_if", "name": "inputlock_locked", "value": 1 }],
+                                "to": [
+                                    { "set_variable": { "name": "inputlock_locked", "value": 0 } },
+                                    { "shell_command": "/Applications/InputLock.app/Contents/MacOS/InputLock unlock" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "description": "InputLock: while locked, every key, media key and mouse button does nothing (right_shift still registers so the unlock can match)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "right_shift", "modifiers": { "optional": ["any"] } },
+                                "conditions": [{ "type": "variable_if", "name": "inputlock_locked", "value": 1 }],
+                                "to": [{ "key_code": "right_shift" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "any": "key_code", "modifiers": { "optional": ["any"] } },
+                                "conditions": [{ "type": "variable_if", "name": "inputlock_locked", "value": 1 }],
+                                "to": []
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "any": "consumer_key_code", "modifiers": { "optional": ["any"] } },
+                                "conditions": [{ "type": "variable_if", "name": "inputlock_locked", "value": 1 }],
+                                "to": []
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "any": "pointing_button", "modifiers": { "optional": ["any"] } },
+                                "conditions": [{ "type": "variable_if", "name": "inputlock_locked", "value": 1 }],
+                                "to": []
+                            }
+                        ]
+                    },
+                    {
                         "description": "Disable Cmd+Q and Cmd+W (Cmd+Shift+Q still works)",
                         "manipulators": [
                             {
