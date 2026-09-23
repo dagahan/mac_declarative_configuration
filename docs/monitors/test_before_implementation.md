@@ -158,4 +158,14 @@ This is only for knowing. Logging out closes every app, so run it only if you wa
 
 ## Results
 
-Filled in as the tests run.
+| Test | Result |
+|---|---|
+| P1 | The suite crashed in `CloseCommandTest`: `close` cast every window to a Mac app. Fixed first (fork `a478b64f`). Then 384 tests pass. The release build succeeded through `mac sync aerospace`. |
+| P2 | Your InputLock work, the sudo prompt fix, the software additions, the submodule bump and these docs were committed as five commits. `git status` was clean before chapter 1. |
+| P3 | The fixture is `apps/Desk/Tests/DeskRuleTests/undock-session.jsonl`. The replay passes with the agent's own 100 ms tick: off at 1.7 (the first tick after 0.1 plus 1.5 s), on at 226.7 and 259.0 (the first tick after each unplug), off at 249.2 and 267.6. A manual "on" at 60 s holds until 222.5. A manual "off" at 230 s is refused. |
+| P4 | All five rows pass as unit tests, plus three and four monitors in a row. |
+| P5 | S1–S11 pass as unit tests against the multi-monitor double. |
+| P6 | `probes/check_key_plane.py`: 111 bindings, 0 problems. The one pre-existing overlap (cmd-q in both Karabiner and AeroSpace) is outside this design. |
+| P7 | The window layout was identical before and after both AeroSpace restarts: 9 windows. |
+| H1 | Waiting for you: step 3 of `probes/e2e.zsh`. |
+| H2, H3 | Optional; not run. |

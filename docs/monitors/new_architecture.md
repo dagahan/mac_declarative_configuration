@@ -64,8 +64,10 @@ screen's `NSScreenNumber` through `CGDisplaySerialNumber` and `CGDisplayIsBuilti
 - model code `virt` (`0x76697274`);
 - 1920×1080, and it becomes the main display.
 
-Both AeroSpace and the helper treat it as **no monitor**. It owns no workspaces, is never a merge
-target, and is never saved.
+Both AeroSpace and the helper treat it as **no monitor**. It has no letter and is never a merge
+target. AeroSpace has to show some workspace on every display, so the stand-in gets a throwaway
+`stand-in-1`. A window born there during that second moves to the first real monitor at once,
+with no home to return to.
 
 **Letters.** Letters are computed from the monitors' current frames every time the set of
 monitors changes:
@@ -156,7 +158,7 @@ will react when the **set of monitor keys** changes.
 
 1. **A monitor disappears.** Its key and last frame are noted, with a timestamp. Nothing moves
    yet, and its workspaces stay as they are, hidden.
-2. **Grace period.** `monitor-loss-grace`, 3 s by default. The measurements showed no blinks at
+2. **Grace period.** `unplugged-monitor-grace-seconds`, 3 by default. The measurements showed no blinks at
    all: the power button doesn't disconnect (B4), and sleeping monitors stay online (B5). The
    grace period exists for two reasons:
    - A reseated cable should cause nothing.
@@ -278,8 +280,9 @@ plain shell (A2, B1–B3). The hotkey belongs to Karabiner.
 - Only connected monitors appear, as you asked.
 
 **Menu bar.** The existing workspace text (`ui/TrayMenuModel.swift`) becomes one entry per monitor
-in letter order, like `D3 F1`, with the focused monitor marked. While a pin is active, its letter
-is marked too. This replaces the text that's there today; it adds no new indicator.
+in letter order, like `*D3 F1📌`: `*` marks the focused monitor and `📌` the pinned one. This
+replaces the text that's there today and adds no new indicator. The old `(F)` badge for the
+floating binding mode is dropped, because `F` is now a monitor.
 
 ## 10. How it sits in mac_setup
 
@@ -300,7 +303,7 @@ is marked too. This replaces the text that's there today; it adds no new indicat
 - **`config/aerospace/aerospace.toml`**:
   - the key table in §5, in both modes;
   - `per-monitor-workspaces`;
-  - `monitor-loss-grace = 3`;
+  - `unplugged-monitor-grace-seconds = 3`;
   - `floating-workspaces = ['1']`;
   - `persistent-workspaces = []`.
 - **The login agent** that already runs `mac workspace down` at login is unchanged. It now also

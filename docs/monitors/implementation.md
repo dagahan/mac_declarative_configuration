@@ -74,7 +74,7 @@ Every step names the existing code it extends, in keeping with "reuse before wri
   workspace, then its own `1`.
 - **Floating by local number:** the four call sites `MinimizeGuard.swift:54`,
   `BordersSync.swift:10`, `HotkeyBinding.swift:65` and `MissionControl.swift:147`.
-- **Format variables:** `%{workspace-local}`.
+- **Format variables:** none needed; `%{workspace}` prints the full name.
 - **Test:** unit test S10, plus startup (every monitor on its own floating 1). Then e2e:
   1. `mac workspace up` (P7 capture first; **AeroSpace restarts**).
   2. Each monitor shows its own 1 and nothing retiles.
@@ -83,7 +83,7 @@ Every step names the existing code it extends, in keeping with "reuse before wri
 
 ## Chapter 5 — Fork: unplugging and replugging
 
-- **Grace:** a `monitor-loss-grace` config key, default 3. A loss is noted with key, frame and
+- **Grace:** an `unplugged-monitor-grace-seconds` config key, default 3. A loss is noted with key, frame and
   time. A single timer re-runs the check when the grace period ends.
 - **Merge:**
   - Tiled windows go into one accordion container appended to the target workspace's root
@@ -125,7 +125,7 @@ Every step names the existing code it extends, in keeping with "reuse before wri
   - `option+shift+Tab` is removed.
 - **Top-level keys:**
   - `per-monitor-workspaces = ['1',…,'0']`
-  - `monitor-loss-grace = 3`
+  - `unplugged-monitor-grace-seconds = 3`
   - `floating-workspaces = ['1']`
   - `persistent-workspaces = []`
 - **Test:**
@@ -206,3 +206,69 @@ judged by eye except F3.
 7. **F3:** one panel per monitor, and a click on F's panel switches F. You look for about 20 s.
 
 **Passes when** every step matches. Then push the fork and mac_setup once each.
+
+## Status (2026-09-23)
+
+Chapters 0–9 are built, tested and committed. Chapter 10 needs you at the desk:
+`docs/monitors/probes/e2e.zsh`. Nothing is pushed yet; both repos are pushed once it passes.
+
+| Chapter | Result | Commit |
+|---|---|---|
+| 0 | P1: the fork's own suite crashed in `CloseCommandTest` before any change (it assumed every window is a real Mac app). Fixed; 384 tests pass. P2: your uncommitted work committed as five commits. | fork `a478b64f`; mac_setup `7464dee`…`6fd852d` |
+| 1 | Monitors carry a key; tests plug several monitors | fork `1e1113b6` |
+| 2 | Workspaces follow monitors by key; S11 passes | fork `dc66a027` |
+| 3 | Letters by position; `letter:x`; P4 fixtures pass | fork `060a0b49` |
+| 4 | `per-monitor-workspaces`; S10 passes | fork `e9c32712` |
+| 5 | Grace, merge into one column, return home; S1–S9 pass | fork `ab14766c` |
+| 6 | Pin, menu bar `*D3 F1📌`, F3 on every monitor | fork `bb54434f`, `169bc6f1` |
+| 7 | Config, P6 key-plane check, install, live checks | mac_setup `b44d713` |
+| 8 | `apps/Desk`; P3 replay and rule tests pass | mac_setup `40fbf98`, `1b11bd4` |
+| 9 | Unit, recipe, launchd jobs, chord; live checks | mac_setup `213add3` |
+| 10 | Script ready, waiting for you | mac_setup `f397113` |
+
+The fork ends with 427 passing tests; `apps/Desk` has 9.
+
+**Checked live on the desk, without touching cables:**
+
+- `list-monitors`: 3996 is D, 39260 is F, the laptop is C. Every monitor started on its own
+  floating 1, and nothing retiled.
+- `workspace 3` lands on the focused monitor's 3; `workspace 39260-5` works; `workspace foo` is
+  refused.
+- The panel goes off 1.7 s after the agent starts. The keyboard light goes to 0 with auto off,
+  and comes back to what it was (auto on, 0.48) when the panel does.
+- `kill -9` of the agent: back in 0.12 s, no flicker.
+- `Desk toggle` holds the panel on past the settle time; `Desk auto` hands back.
+- Display sleep and wake: the panel stays off and the keyboard stays dark.
+- Turning the panel on brings the laptop's three windows home from D's 1 within a second. Turning
+  it off sends them back to D after exactly the 3 s grace. The homes survived an AeroSpace restart.
+- Rebuilding Desk while it runs stops it cleanly with the panel on; `mac workspace up` reloads it.
+- F3 opens one overlay per monitor and closes cleanly with hotkeys restored.
+- The window layout was identical before and after two AeroSpace restarts.
+
+**Where the build differs from the plan above:**
+
+- The grace key is `unplugged-monitor-grace-seconds`, not `monitor-loss-grace`.
+- No `%{workspace-local}`; nothing needed it.
+- The stand-in display shows a throwaway `stand-in-1`, because AeroSpace must show something on
+  every display. Windows born there move to the first real monitor at once, with no home.
+- With per-monitor workspaces on, a monitor shows only its own workspaces. Commands naming a
+  workspace no connected monitor owns are refused with a message. Old bare names (`3`) from
+  before the switch move to the monitor they were shown on.
+- The menu bar drops the `(F)` floating-mode badge, since `F` is now a monitor.
+- Desk holds a lock file instead of asking LaunchServices whether it is already running, because
+  the rescue job runs the same bundle binary every 5 s.
+- The agent's launchd job restarts it only after a crash. A clean stop turns the panel on first
+  and stays stopped until `mac workspace up` reloads it, which is also how a rebuild takes effect.
+
+**Not checked yet, and why:**
+
+- **Pulling cables (H1, S2, S3, S6 on real hardware):** needs you. Step 3 of `e2e.zsh` unplugs
+  both cables twice and times the panel.
+- **The chord and F3 by key:** Karabiner's root daemon only starts on a `mac workspace up` that is
+  given your password. I never enter passwords, so every `up` here skipped it.
+- **Pressing the letters, the roll, and the pin double tap:** I don't send synthetic keystrokes.
+  The same commands were run through the CLI.
+
+One oddity seen once: the very first `workspace 3` right after `focus-monitor letter:f`, seconds
+after the reboot under heavy load, left F on its 1. macOS finished focusing F's window late and
+pulled focus back. It did not happen again in six tries at 0–300 ms gaps.
