@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.mac-setup.desk</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/Desk.app/Contents/MacOS/Desk</string>
+    </array>
+    <key>RunAtLoad</key><true/>
+    <!-- A crash or kill -9 is back within a second and its first look at the displays lights the
+         panel if no monitor is left. A clean stop turns the panel on first and stays stopped. -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key><false/>
+    </dict>
+    <key>ThrottleInterval</key><integer>1</integer>
+    <key>ProcessType</key><string>Interactive</string>
+    <key>StandardOutPath</key><string>/Users/nick/.local/state/mac_setup/desk/agent.log</string>
+    <key>StandardErrorPath</key><string>/Users/nick/.local/state/mac_setup/desk/agent.log</string>
+</dict>
+</plist>

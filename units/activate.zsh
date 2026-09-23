@@ -1,4 +1,4 @@
-requires=(aerospace alttab ainto karabiner dock input menubar bitwarden dotfiles inputlock)
+requires=(aerospace alttab ainto karabiner dock input menubar bitwarden dotfiles inputlock desk)
 workspace=1
 
 service Dock        kind=killall
@@ -21,3 +21,10 @@ run aerospace why="the window manager has to be running, and has to be restarted
     check='pgrep -qx AeroSpace && ! restart_pending AeroSpace' \
     apply='zsh recipes/aerospace-restart.zsh && restart_done AeroSpace' \
     revert='/opt/homebrew/bin/aerospace enable off 2>/dev/null; pkill -x AeroSpace; true'
+
+# The laptop panel. A run, not a daemon: mac workspace down skips daemons, and down is what
+# must turn the panel back on and unload both jobs.
+run desk why="the laptop panel goes dark while monitors are attached, and a new build needs the agent reloaded" \
+    check='zsh recipes/desk.zsh check && ! restart_pending Desk' \
+    apply='zsh recipes/desk.zsh up && restart_done Desk' \
+    revert='zsh recipes/desk.zsh down'
