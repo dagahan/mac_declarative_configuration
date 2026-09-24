@@ -717,6 +717,12 @@ cmd_do() {
     return 1
 }
 
+cmd_desk() {
+    local desk="$HOME/.local/libexec/mac-desk"
+    [[ -x "$desk" ]] || { print -r -- "  $S_BAD the desk helper is not installed — mac sync desk"; return 1 }
+    "$desk" "$@"
+}
+
 # A tree under private/ owns a command of its own name, so `mac vpn uri` runs
 # private/vpn/tasks/uri.zsh. Core dispatches by tree, and stays ignorant of
 # what any given tree is for.

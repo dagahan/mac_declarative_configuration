@@ -25,6 +25,6 @@ run aerospace why="the window manager has to be running, and has to be restarted
 # The laptop panel. A run, not a daemon: mac workspace down skips daemons, and down is what
 # must turn the panel back on and unload both jobs.
 run desk why="the laptop panel goes dark while monitors are attached, and a new build needs the agent reloaded" \
-    check='zsh recipes/desk.zsh check && ! restart_pending Desk' \
-    apply='zsh recipes/desk.zsh up && restart_done Desk' \
+    check='zsh recipes/desk.zsh check && ! restart_pending mac-desk' \
+    apply='zsh recipes/desk.zsh up && restart_done mac-desk' \
     revert='zsh recipes/desk.zsh down'

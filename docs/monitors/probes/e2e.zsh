@@ -6,7 +6,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 typeset -g HERE=${0:A:h}
 typeset -g OUT="$HOME/.local/state/mac_setup/monitors/e2e-$(strftime %Y%m%d-%H%M%S $EPOCHSECONDS)"
 typeset -g EV="$OUT/events.jsonl" RESULTS="$OUT/results.txt"
-typeset -g DESK=/Applications/Desk.app/Contents/MacOS/Desk DESK_EVENTS="$HOME/.local/state/mac_setup/desk/events.log"
+typeset -g MAC=${HERE:h:h:h}/mac DESK_EVENTS="$HOME/.local/state/mac_setup/desk/events.log"
 typeset -g LEFT=3996 RIGHT=39260
 typeset -ga HELPERS STEPS
 typeset -gi PASSED=0 FAILED=0
@@ -33,7 +33,8 @@ verdict() {
 
 check() { local name=$1; shift; "$@"; verdict "$name" $(( $? == 0 )) }
 
-panel_now() { $DESK status | sed -n 's/^panel_now=//p' }
+desk() { $MAC desk "$@" }
+panel_now() { desk status | sed -n 's/^panel_now=//p' }
 monitor_keys() { aerospace list-monitors --format '%{monitor-key}' | sort -n | tr '\n' ' ' }
 focused_monitor() { aerospace list-monitors --focused --format '%{monitor-key}' }
 focused_workspace() { aerospace list-workspaces --focused }
@@ -89,7 +90,7 @@ cleanup() {
     pkill -f "$HERE/probe.swift.*logger" 2>/dev/null
     kill ${HELPERS[@]} 2>/dev/null
     say "$PASSED passed, $FAILED failed — $RESULTS"
-    say "If the laptop screen is dark with no monitor attached: $DESK on"
+    say "If the laptop screen is dark with no monitor attached: mac desk on"
 }
 
 preflight() {
@@ -98,7 +99,7 @@ preflight() {
     say "or plug a monitor back in. Keep this terminal on monitor D (the left one)."
     local ok=1
     pgrep -qx AeroSpace || { say "AeroSpace is not running — run: mac workspace up"; ok=0 }
-    [[ $($DESK status | sed -n 's/^agent=//p') == running ]] || { say "Desk is not running — run: mac workspace up"; ok=0 }
+    [[ $(desk status | sed -n 's/^agent=//p') == running ]] || { say "the desk agent is not running — run: mac workspace up"; ok=0 }
     pgrep -qx karabiner_grabber || say "Karabiner's daemon is not running, so the chord and F3 cannot work — run mac workspace up and give it your password"
     monitors_are "$LEFT $RIGHT " || { say "expected monitors $LEFT and $RIGHT, AeroSpace sees: $(monitor_keys)"; ok=0 }
     (( ok )) || exit 1
@@ -186,7 +187,7 @@ chord() {
     check "and it stays on" panel_is on
     say "Press ctrl+option+cmd+L again."
     check "the chord turns it off again" wait_until 5 panel_is off
-    $DESK auto
+    desk auto
 }
 
 lock() {

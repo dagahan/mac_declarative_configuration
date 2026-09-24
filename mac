@@ -38,6 +38,8 @@ usage() {
     secret <add|get|list|rotate>   private values, encrypted in the repo
     log [-l|-f|<run>]   last run's journal · list · follow · one by name
     do [task]           one-shot tasks · no name lists them
+    desk <on|off|toggle|auto|status>
+                        the laptop panel while monitors are attached · no verb explains them
     vpn [command]       the tunnel · no name lists them
 
   ^C stops any run. Whatever was mid-write is put back before it exits.
@@ -64,6 +66,7 @@ done
 # Bare `mac` says what mac is. It used to run a full check of the machine, which
 # is a slow and surprising answer to a question nobody asked.
 [[ -z "$CMD" ]] && { usage; exit 0 }
+[[ "$CMD" == desk ]] && { cmd_desk "${ARGV[@]}"; exit $? }
 
 journal_open "$CMD" "${ARGV[@]}"
 tty_save

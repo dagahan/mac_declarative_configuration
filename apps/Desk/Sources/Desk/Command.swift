@@ -9,11 +9,11 @@ enum Command: String, CaseIterable {
     case status
     case rescue
 
-    static let bundleIdentifier = "com.mac-setup.desk"
+    static let notificationPrefix = "com.mac-setup.desk"
     static let sentToAgent: [Command] = [.on, .off, .toggle, .auto]
 
     var notificationName: Notification.Name {
-        Notification.Name("\(Command.bundleIdentifier).\(rawValue)")
+        Notification.Name("\(Command.notificationPrefix).\(rawValue)")
     }
 
     private var agentIsRunning: Bool { DeskState().agentIsRunning }
@@ -41,7 +41,7 @@ enum Command: String, CaseIterable {
         let panelIsOn = Displays.online().contains(where: \.isBuiltin)
         let turnsThePanelOn = self == .on || (self == .toggle && !panelIsOn)
         guard turnsThePanelOn else {
-            FileHandle.standardError.write(Data("Desk is not running — only turning the panel on works without it; mac workspace up starts it\n".utf8))
+            FileHandle.standardError.write(Data("the desk agent is not running, so only turning the panel on works — mac workspace up starts it\n".utf8))
             return 1
         }
         PanelSwitch().turnPanelOn(because: "\(rawValue)-without-agent")

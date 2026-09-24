@@ -17,7 +17,7 @@ final class Agent: NSObject {
 
     static func run() {
         guard let agentLock = DeskState().takeAgentLock() else {
-            FileHandle.standardError.write(Data("Desk is already running\n".utf8))
+            FileHandle.standardError.write(Data("the desk agent is already running\n".utf8))
             exit(0)
         }
         let application = NSApplication.shared

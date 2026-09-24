@@ -155,42 +155,42 @@ New files carry over calls already proven by `docs/monitors/probes/probe.swift`:
 | `Rule.swift` | The pure decision function: panel on immediately when no real monitors; off after 1.5 s stable; the manual override until the set of serials changes; refusing "off" with no monitors |
 | `Agent.swift` | 100 ms evaluation on its own dispatch queue plus the screen-parameters notification; reassert the light after wake; check the private call at start and stay a plain laptop if it's missing |
 
-The `Desk` commands are `on | off | toggle | auto | status | rescue`. A test target runs P3's
+The `mac desk` verbs are `on | off | toggle | auto | status`; launchd runs `mac-desk agent` and `mac-desk rescue`. A test target runs P3's
 replay.
 
 - **Test:**
   1. `swift test`: the replay matches P3's table, plus rule unit tests for the override.
   2. Build through the recipe.
-  3. Headless `Desk status` with the agent stopped and then running.
+  3. Headless `mac desk status` with the agent stopped and then running.
 
   The panel isn't touched in this chapter.
 
 ## Chapter 9 — mac_setup: declaring and wiring the helper
 
 - **`units/desk.zsh`:**
-  - `build desk from=apps/Desk recipe=recipes/desk.zsh …`, installed to `/Applications/Desk.app`;
+  - `build desk from=apps/Desk recipe=recipes/desk.zsh …`, installed as the plain binary `~/.local/libexec/mac-desk`, outside PATH;
   - `file` resources for `config/launchd/desk.plist` (KeepAlive, ThrottleInterval 1) and
-    `config/launchd/desk-rescue.plist` (StartInterval 5, `Desk rescue`), both placed under
+    `config/launchd/desk-rescue.plist` (StartInterval 5, `mac-desk rescue`), both placed under
     `~/.config/mac_setup/launchd/`.
 - **`recipes/desk.zsh`:**
   - `build` (the same shape as `recipes/inputlock.zsh`);
   - `up`: bootstrap both jobs;
-  - `down`: `Desk on`, then boot out both.
-- **`units/activate.zsh`:** `run desk check='pgrep -qx Desk' apply='zsh recipes/desk.zsh up' revert='zsh recipes/desk.zsh down'`.
-- **`config/karabiner/karabiner.json`:** `ctrl+option+cmd+L` → `/Applications/Desk.app/Contents/MacOS/Desk toggle`.
+  - `down`: `mac desk on`, then boot out both.
+- **`units/activate.zsh`:** `run desk check='zsh recipes/desk.zsh check' apply='zsh recipes/desk.zsh up' revert='zsh recipes/desk.zsh down'`.
+- **`config/karabiner/karabiner.json`:** `ctrl+option+cmd+L` → `~/.local/libexec/mac-desk toggle`.
 - **Test** (**the laptop panel turns off and on here; announced first**):
   1. `mac lint` and `mac check`.
   2. `mac workspace up` on a pty. Both jobs are loaded, and the panel goes off about 1.5 s later
      with the keyboard light at 0.
   3. `kill -9` the agent. It's back within about 2 s and the panel stays off.
   4. `mac workspace down` on a pty. The panel is on, the keyboard light is restored, both jobs are
-     unloaded, and `Desk status` says the agent is gone.
+     unloaded, and `mac desk status` says the agent is gone.
   5. `mac workspace up` again, to leave you where you were.
 
 ## Chapter 10 — End to end on the real desk (attended, about 5 minutes)
 
 A guided script, `docs/monitors/probes/e2e.zsh`, built like `session.zsh`, walks through this
-with you. Every check reads `aerospace list-windows`, `list-monitors` and `Desk status`; nothing is
+with you. Every check reads `aerospace list-windows`, `list-monitors` and `mac desk status`; nothing is
 judged by eye except F3.
 
 1. **Docked:** the panel is off, and `option+D` and `option+F` focus the right monitors. A roll
@@ -237,7 +237,7 @@ The fork ends with 427 passing tests; `apps/Desk` has 9.
 - The panel goes off 1.7 s after the agent starts. The keyboard light goes to 0 with auto off,
   and comes back to what it was (auto on, 0.48) when the panel does.
 - `kill -9` of the agent: back in 0.12 s, no flicker.
-- `Desk toggle` holds the panel on past the settle time; `Desk auto` hands back.
+- `mac desk toggle` holds the panel on past the settle time; `mac desk auto` hands back.
 - Display sleep and wake: the panel stays off and the keyboard stays dark.
 - Turning the panel on brings the laptop's three windows home from D's 1 within a second. Turning
   it off sends them back to D after exactly the 3 s grace. The homes survived an AeroSpace restart.
@@ -255,8 +255,8 @@ The fork ends with 427 passing tests; `apps/Desk` has 9.
   workspace no connected monitor owns are refused with a message. Old bare names (`3`) from
   before the switch move to the monitor they were shown on.
 - The menu bar drops the `(F)` floating-mode badge, since `F` is now a monitor.
-- Desk holds a lock file instead of asking LaunchServices whether it is already running, because
-  the rescue job runs the same bundle binary every 5 s.
+- Desk is a plain binary, not an app bundle, and `mac desk <verb>` is the only way you drive it.
+  It holds a lock file to stay one agent, because the rescue job runs the same binary every 5 s.
 - The agent's launchd job restarts it only after a crash. A clean stop turns the panel on first
   and stays stopped until `mac workspace up` reloads it, which is also how a rebuild takes effect.
 

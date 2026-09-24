@@ -7,7 +7,7 @@
          monitor to stand in for it, within five seconds. -->
     <key>ProgramArguments</key>
     <array>
-        <string>/Applications/Desk.app/Contents/MacOS/Desk</string>
+        <string>/Users/nick/.local/libexec/mac-desk</string>
         <string>rescue</string>
     </array>
     <key>RunAtLoad</key><true/>

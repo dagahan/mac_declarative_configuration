@@ -138,7 +138,7 @@ and Russian (A6).
 | `option+W` | Close, unchanged | |
 | `option+shift+E` | Finder (moved off `option+shift+F`) | `smart-open Finder` |
 | `F3` | Overview on every monitor | Karabiner → `aerospace mission-control` |
-| `ctrl+option+cmd+L` | Desk mode toggle | Karabiner → `Desk toggle` |
+| `ctrl+option+cmd+L` | Desk mode toggle | Karabiner → `mac desk toggle` |
 | ~~`option+shift+Tab`~~ | Removed. AeroSpace refuses to move a monitor-owned workspace, and it contradicts per-monitor workspaces anyway | |
 
 **Rolls.**
@@ -209,8 +209,7 @@ nearest to where the laptop sits.
 
 **Shape.** Desk is one binary with two roles, the same shape as InputLock:
 
-- **The agent**, `Desk` with no argument: an accessory `NSApplication`, one instance per bundle
-  id, `com.mac-setup.desk`.
+- **The agent**, `mac-desk agent`: an accessory `NSApplication`, one instance at a time.
 - **Commands** sent to the agent over distributed notifications: `on`, `off`, `toggle`, `auto`,
   `status`, `rescue`.
 
@@ -257,11 +256,11 @@ ours:
 |---|---|---|
 | The last real monitor is unplugged | The agent's rule | About 1 s |
 | The agent crashed | launchd `KeepAlive` with `ThrottleInterval` 1 restarts it, and its first evaluation lights the panel | About 1–2 s |
-| The agent hung | A separate launchd job runs `Desk rescue` every 5 s: panel off and no real monitors → on | Up to about 6 s |
-| Both launchd jobs are gone | The Karabiner chord runs `Desk on` directly, with no agent needed | Instant |
+| The agent hung | A separate launchd job runs `mac-desk rescue` every 5 s: panel off and no real monitors → on | Up to about 6 s |
+| Both launchd jobs are gone | The Karabiner chord runs `mac desk on` directly, with no agent needed | Instant |
 | Karabiner is gone too | Plug any monitor in (proven in B6) | — |
-| Logout or reboot | The existing login agent runs `mac workspace down`, and down runs `Desk on` | At login |
-| `mac workspace down` | Its revert runs `Desk on` before stopping anything | — |
+| Logout or reboot | The existing login agent runs `mac workspace down`, and down runs `mac desk on` | At login |
+| `mac workspace down` | Its revert runs `mac desk on` before stopping anything | — |
 
 Reopening the lid is **not** a layer: it was measured not to help (B7).
 
@@ -287,19 +286,19 @@ floating binding mode is dropped, because `F` is now a monitor.
 ## 10. How it sits in mac_setup
 
 - **`units/desk.zsh`** (new):
-  - `build desk from=apps/Desk recipe=recipes/desk.zsh`, installed to `/Applications/Desk.app`;
+  - `build desk from=apps/Desk recipe=recipes/desk.zsh`, installed as the plain binary `~/.local/libexec/mac-desk`, driven only through `mac desk <verb>`;
   - two plists as `file` resources under `~/.config/mac_setup/launchd/`: the agent (KeepAlive)
     and the rescue job (StartInterval 5).
 
   These live outside the directories launchd scans at login, the same rule the VPN tree
   follows.
 - **`units/activate.zsh`** gains
-  `run desk check='pgrep -qx Desk' apply='zsh recipes/desk.zsh up' revert='zsh recipes/desk.zsh down'`.
+  `run desk check='zsh recipes/desk.zsh check' apply='zsh recipes/desk.zsh up' revert='zsh recipes/desk.zsh down'`.
   It's a `run` resource, not a `daemon`, because `mac workspace down` skips `daemon` resources
   (`engine/cmd.zsh:592`), and down must reach this one.
   - `up` loads both jobs.
-  - `down` runs `Desk on`, then unloads both.
-- **`config/karabiner/karabiner.json`** gains one rule: `ctrl+option+cmd+L` → `Desk toggle`.
+  - `down` runs `mac desk on`, then unloads both.
+- **`config/karabiner/karabiner.json`** gains one rule: `ctrl+option+cmd+L` → `mac desk toggle`.
 - **`config/aerospace/aerospace.toml`**:
   - the key table in §5, in both modes;
   - `per-monitor-workspaces`;

@@ -2,7 +2,7 @@ set -euo pipefail
 agent=com.mac-setup.desk
 rescue=com.mac-setup.desk-rescue
 plists="$HOME/.config/mac_setup/launchd"
-desk=/Applications/Desk.app/Contents/MacOS/Desk
+desk="$HOME/.local/libexec/mac-desk"
 domain="gui/$(id -u)"
 
 loaded() { launchctl print "$domain/$1" >/dev/null 2>&1 }
@@ -13,11 +13,7 @@ case "${1:-build}" in
         source "${0:A:h}/env.zsh"
         cd "$BUILD_DIR"
         swift build -c release --product Desk
-        bundle=.build/Desk.app
-        rm -rf "$bundle"
-        mkdir -p "$bundle/Contents/MacOS"
-        cp "$(swift build -c release --show-bin-path)/Desk" "$bundle/Contents/MacOS/Desk"
-        cp Info.plist "$bundle/Contents/Info.plist"
+        cp "$(swift build -c release --show-bin-path)/Desk" .build/mac-desk
         ;;
     up)
         for job in $agent $rescue; do

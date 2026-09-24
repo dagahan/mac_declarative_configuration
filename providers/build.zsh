@@ -69,7 +69,7 @@ build_apply() {
     cache="$STATE/artifacts/$name/$fp.app"
     mkdir -p "$STATE/builds" "$STATE/artifacts/$name"
 
-    if [[ -d "$cache" ]]; then
+    if [[ -e "$cache" ]]; then
         _build_install "$cache" "$app" "$proc" 0 || return 1
     else
         log="$STATE/journal/build-$name.log"
