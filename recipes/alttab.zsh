@@ -2,5 +2,5 @@ source "${0:A:h}/env.zsh"
 set -euo pipefail
 cd "$BUILD_DIR"
 xcodebuild -project alt-tab-macos.xcodeproj -scheme Release -derivedDataPath DerivedData \
-    CURRENT_PROJECT_VERSION="11.7.1-${BUILD_REF:0:8}" \
+    CURRENT_PROJECT_VERSION="11.9.0-${BUILD_REF:0:8}" \
     CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
