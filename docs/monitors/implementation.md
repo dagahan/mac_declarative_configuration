@@ -1,5 +1,10 @@
 # Implementation
 
+> **Superseded on Oct 10, 2026.** Workspaces 1-0 are now shared and shown only on the main
+> display; every other display owns one floating workspace `<display-id>-S`. The top-row
+> letters are E R T Y, and pin-monitor is gone. `config/aerospace/aerospace.toml` and
+> `probes/e2e.zsh` describe the current behaviour.
+
 This is the step-by-step build of [new_architecture.md](new_architecture.md), in chapters.
 
 - Each chapter ends with a test that drives the real thing.

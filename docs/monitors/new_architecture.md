@@ -1,5 +1,10 @@
 # Multi-monitor desk — architecture
 
+> **Superseded on Oct 10, 2026.** Workspaces 1-0 are now shared and shown only on the main
+> display; every other display owns one floating workspace `<display-id>-S`. The top-row
+> letters are E R T Y, and pin-monitor is gone. `config/aerospace/aerospace.toml` and
+> `probes/e2e.zsh` describe the current behaviour.
+
 This file describes how the desk works for a MacBook kept open under two monitors. Each monitor
 owns its own workspaces 1–0. Monitors are reached by keys that match where they sit. The laptop
 panel powers off while monitors are attached, and comes back on by itself when they aren't.

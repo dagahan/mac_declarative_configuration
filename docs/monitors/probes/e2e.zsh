@@ -40,6 +40,8 @@ focused_monitor() { aerospace list-monitors --focused --format '%{monitor-key}' 
 focused_workspace() { aerospace list-workspaces --focused }
 workspace_of() { aerospace list-windows --all --format '%{window-id} %{workspace}' | awk -v id=$1 '$1 == id { print $2 }' }
 windows_on() { aerospace list-windows --all --format '%{window-id} %{workspace}' | awk -v owner="$1-" 'index($2, owner) == 1' }
+numbered_windows() { aerospace list-windows --all --format '%{window-id} %{workspace}' | awk '$2 ~ /^[0-9]$/' | sort }
+main_workspace() { aerospace list-workspaces --monitor $(aerospace list-monitors --format '%{monitor-id} %{monitor-is-main}' | awk '$2 == "true" { print $1 }') --visible }
 
 wait_until() {
     local seconds=$1 i
@@ -54,10 +56,11 @@ wait_until() {
 panel_is() { [[ $(panel_now) == $1 ]] }
 monitors_are() { [[ $(monitor_keys) == "$1" ]] }
 
-windows_moved_to() {
-    local snapshot=$1 host=$2 id workspace
+windows_float_on_main() {
+    local snapshot=$1 host id workspace
+    host=$(main_workspace)
     while read -r id workspace; do
-        [[ $(workspace_of $id) == "$host-${workspace##*-}" ]] || return 1
+        [[ $(workspace_of $id) == $host ]] || return 1
     done < "$snapshot"
 }
 
@@ -96,7 +99,7 @@ cleanup() {
 preflight() {
     say "The multi-monitor desk, end to end — about 5 minutes. Stay at the desk with the lid open."
     say "If the laptop screen ever stays dark with no monitor attached: wait 5 s, press ctrl+option+cmd+L,"
-    say "or plug a monitor back in. Keep this terminal on monitor D (the left one)."
+    say "or plug a monitor back in. Keep this terminal on monitor E (the left one)."
     local ok=1
     pgrep -qx AeroSpace || { say "AeroSpace is not running — run: mac workspace up"; ok=0 }
     [[ $(desk status | sed -n 's/^agent=//p') == running ]] || { say "the desk agent is not running — run: mac workspace up"; ok=0 }
@@ -113,26 +116,26 @@ docked() {
     mark docked
     say "1. Docked"
     check "the laptop panel is off while docked" panel_is off
-    check "D is $LEFT and F is $RIGHT" [ "$(aerospace list-monitors --format '%{monitor-letter}%{monitor-key}' | sort | tr '\n' ' ')" = "D$LEFT F$RIGHT " ]
-    say "Press option+F."; wait_enter
-    check "option+F focuses the right monitor" [ "$(focused_monitor)" = $RIGHT ]
-    say "Press option+D."; wait_enter
-    check "option+D focuses the left monitor" [ "$(focused_monitor)" = $LEFT ]
-    say "Hold option, tap F, then tap 3."; wait_enter
-    check "option: F, 3 lands on F's 3" [ "$(focused_workspace)" = "$RIGHT-3" ]
-    say "Press option+Enter to open a terminal on F's 3, and keep it focused."; wait_enter
-    local window
+    check "E is $LEFT and R is $RIGHT" [ "$(aerospace list-monitors --format '%{monitor-letter}%{monitor-key}' | sort | tr '\n' ' ')" = "E$LEFT R$RIGHT " ]
+    local main
+    main=$(aerospace list-monitors --format '%{monitor-key} %{monitor-is-main}' | awk '$2 == "true" { print $1 }')
+    say "Press option+R."; wait_enter
+    check "option+R focuses the right monitor" [ "$(focused_monitor)" = $RIGHT ]
+    say "Press option+E."; wait_enter
+    check "option+E focuses the left monitor" [ "$(focused_monitor)" = $LEFT ]
+    say "Press option+R, then option+3."; wait_enter
+    check "option+3 shows workspace 3" [ "$(focused_workspace)" = 3 ]
+    check "on the main monitor, from the other one" [ "$(focused_monitor)" = $main ]
+    say "Press option+Enter to open a terminal on 3, and keep it focused."; wait_enter
+    local window secondary
     window=$(aerospace list-windows --focused --format '%{window-id}')
-    say "Hold option+shift, tap D, then tap 5."; wait_enter
-    check "option+shift: D, 5 carries the window to D's 5" [ "$(workspace_of $window)" = "$LEFT-5" ]
-    check "and focus follows it to D" [ "$(focused_monitor)" = $LEFT ]
-    say "Double-tap option+F (two quick taps)."; wait_enter
-    yes_no "Does the menu bar show F with a 📌?" && verdict "a double tap pins F" 1 || verdict "a double tap pins F" 0
-    say "Press option+shift+2 (the terminal is still focused on D's 5)."; wait_enter
-    check "while F is pinned, option+shift+2 sends the window to F's 2" [ "$(workspace_of $window)" = "$RIGHT-2" ]
-    check "and focus stays on D" [ "$(focused_monitor)" = $LEFT ]
-    say "Press option+Esc."; wait_enter
-    yes_no "Is the 📌 gone from the menu bar?" && verdict "option+Esc unpins" 1 || verdict "option+Esc unpins" 0
+    [[ $main == $LEFT ]] && secondary=$RIGHT || secondary=$LEFT
+    say "Press option+shift+$([[ $secondary == $RIGHT ]] && print R || print E)."; wait_enter
+    check "option+shift+letter carries the window to the other monitor's own workspace" [ "$(workspace_of $window)" = "$secondary-S" ]
+    check "and focus follows it" [ "$(focused_monitor)" = $secondary ]
+    say "Press option+shift+5."; wait_enter
+    check "option+shift+5 sends the window to workspace 5" [ "$(workspace_of $window)" = 5 ]
+    check "and focus stays where it was" [ "$(focused_monitor)" = $secondary ]
     aerospace close --window-id $window 2>/dev/null
     aerospace workspace --fail-if-noop 1 >/dev/null 2>&1
 }
@@ -140,23 +143,29 @@ docked() {
 right_cable() {
     mark right-cable
     say "2. One cable"
-    windows_on $RIGHT > "$OUT/right-windows.txt"
-    say "Unplug the cable of the RIGHT monitor (F) only."
-    wait_until 30 monitors_are "$LEFT " || verdict "F disappears" 0
+    local main secondary
+    main=$(aerospace list-monitors --format '%{monitor-key} %{monitor-is-main}' | awk '$2 == "true" { print $1 }')
+    [[ $main == $LEFT ]] && secondary=$RIGHT || secondary=$LEFT
+    windows_on $secondary > "$OUT/secondary-windows.txt"
+    numbered_windows > "$OUT/numbered-windows.txt"
+    say "Unplug the cable of the monitor WITHOUT the menu bar only."
+    wait_until 30 monitors_are "$main " || verdict "the secondary monitor disappears" 0
     sleep 4
     check "the laptop panel stays off with one monitor left" panel_is off
-    check "F's windows sit on D's same numbers" windows_moved_to "$OUT/right-windows.txt" $LEFT
-    say "Plug the right monitor back in."
-    wait_until 30 monitors_are "$LEFT $RIGHT " || verdict "F comes back" 0
+    check "its windows float on the workspace the main monitor shows" windows_float_on_main "$OUT/secondary-windows.txt"
+    say "Plug that monitor back in."
+    wait_until 30 monitors_are "$LEFT $RIGHT " || verdict "the secondary monitor comes back" 0
     sleep 1
-    check "F's windows go home" windows_back_home "$OUT/right-windows.txt"
+    check "its windows go home" windows_back_home "$OUT/secondary-windows.txt"
+    check "workspaces 1-0 kept their windows" [ "$(numbered_windows)" = "$(<$OUT/numbered-windows.txt)" ]
 }
 
 both_cables() {
     mark both-cables
     say "3. Both cables (twice)"
-    windows_on $LEFT > "$OUT/left-windows.txt"
-    windows_on $RIGHT > "$OUT/right-windows.txt"
+    windows_on $LEFT > "$OUT/own-windows.txt"
+    windows_on $RIGHT >> "$OUT/own-windows.txt"
+    numbered_windows > "$OUT/numbered-windows.txt"
     local round since seconds
     for round in 1 2; do
         since=$EPOCHREALTIME
@@ -166,16 +175,15 @@ both_cables() {
         seconds=$(seconds_from_last_monitor_to_panel $since)
         verdict "round $round: the panel lights after the last monitor leaves" $([[ $seconds != never ]] && (( seconds < 2 )) && print 1 || print 0) "${seconds}s"
         if (( round == 1 )); then
-            check "D's windows sit on the laptop's same numbers" windows_moved_to "$OUT/left-windows.txt" builtin
-            check "F's windows sit on the laptop's same numbers" windows_moved_to "$OUT/right-windows.txt" builtin
+            check "the monitors' own windows float on the workspace the laptop shows" windows_float_on_main "$OUT/own-windows.txt"
         fi
         say "Plug both cables back in."
         wait_until 30 monitors_are "$LEFT $RIGHT " || verdict "both monitors come back" 0
         check "round $round: the panel goes off again" wait_until 5 panel_is off
     done
     sleep 1
-    check "D's windows went home" windows_back_home "$OUT/left-windows.txt"
-    check "F's windows went home" windows_back_home "$OUT/right-windows.txt"
+    check "the monitors' own windows went home" windows_back_home "$OUT/own-windows.txt"
+    check "workspaces 1-0 kept their windows" [ "$(numbered_windows)" = "$(<$OUT/numbered-windows.txt)" ]
 }
 
 chord() {
@@ -216,10 +224,11 @@ crash() {
 overview() {
     mark overview
     say "7. F3"
-    say "Press F3 and look at both monitors for a few seconds."; wait_enter
-    yes_no "One panel per monitor, each with its letter (D, F) and its own 1–0?" && verdict "F3 on every monitor" 1 || verdict "F3 on every monitor" 0
-    say "Click workspace 4 on F's panel."; wait_enter
-    check "a click on F's panel switches F" [ "$(aerospace list-workspaces --monitor $(aerospace list-monitors --format '%{monitor-id} %{monitor-key}' | awk -v k=$RIGHT '$2 == k { print $1 }') --visible)" = "$RIGHT-4" ]
+    say "Focus the monitor WITHOUT the menu bar, press F3 and look at both monitors for a few seconds."; wait_enter
+    yes_no "One grid of 1-0 with a letter on the main monitor, and only a letter at the same height on the other?" && verdict "F3 on every monitor" 1 || verdict "F3 on every monitor" 0
+    say "Press 4."; wait_enter
+    check "a digit goes to the main grid" [ "$(main_workspace)" = 4 ]
+    yes_no "Did every Mission Control window close at once?" && verdict "F3 closes everywhere" 1 || verdict "F3 closes everywhere" 0
     aerospace workspace 1 >/dev/null 2>&1
 }
 
