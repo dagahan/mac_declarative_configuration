@@ -27,6 +27,7 @@ xcodegen
 
 # languages
 rustup
+swiftly
 go
 openjdk@17
 # 21, not 17: super-productivity's android build compiles at JavaVersion.VERSION_21

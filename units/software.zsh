@@ -14,3 +14,8 @@ run rust-toolchain why="the Ainto core is Rust; homebrew ships only the rustup m
     check='rustup show active-toolchain' \
     apply='rustup default stable' \
     revert='rustup toolchain uninstall stable; true'
+
+run swift-toolchain why="AeroSpace pins its Swift in vendor/AeroSpace/.swift-version, newer than the one Xcode ships; homebrew ships only the swiftly manager" \
+    check='swiftly list 2>/dev/null | grep -q "Swift $(<vendor/AeroSpace/.swift-version) "' \
+    apply='swiftly init --no-modify-profile --skip-install --quiet-shell-followup --assume-yes && cd vendor/AeroSpace && swiftly install --assume-yes' \
+    revert='swiftly uninstall --assume-yes "$(<vendor/AeroSpace/.swift-version)"; true'
