@@ -68,19 +68,6 @@
                         ]
                     },
                     {
-                        "description": "Desk: Ctrl+Option+Cmd+L turns the laptop panel on or off until a monitor cable changes (mac desk toggle; works even when the desk agent is not running)",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "l",
-                                    "modifiers": { "mandatory": ["control", "option", "command"], "optional": ["caps_lock"] }
-                                },
-                                "to": [{ "shell_command": "/Users/nick/.local/libexec/mac-desk toggle" }]
-                            }
-                        ]
-                    },
-                    {
                         "description": "Disable Cmd+Q and Cmd+W (Cmd+Shift+Q still works)",
                         "manipulators": [
                             {

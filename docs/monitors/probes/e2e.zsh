@@ -103,7 +103,7 @@ preflight() {
     local ok=1
     pgrep -qx AeroSpace || { say "AeroSpace is not running — run: mac workspace up"; ok=0 }
     [[ $(desk status | sed -n 's/^agent=//p') == running ]] || { say "the desk agent is not running — run: mac workspace up"; ok=0 }
-    pgrep -qx karabiner_grabber || say "Karabiner's daemon is not running, so the chord and F3 cannot work — run mac workspace up and give it your password"
+    pgrep -qx karabiner_grabber || say "Karabiner's daemon is not running, so F3 cannot work — run mac workspace up and give it your password"
     monitors_are "$LEFT $RIGHT " || { say "expected monitors $LEFT and $RIGHT, AeroSpace sees: $(monitor_keys)"; ok=0 }
     (( ok )) || exit 1
     aerospace list-windows --all --format '%{window-id}|%{app-name}|%{workspace}' > "$OUT/layout-before.txt"

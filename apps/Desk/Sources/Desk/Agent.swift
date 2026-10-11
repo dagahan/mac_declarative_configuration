@@ -54,7 +54,10 @@ final class Agent: NSObject {
         if Displays.online().contains(where: \.isBuiltin) { panelSwitch.giveTheKeyboardItsLightBack() }
         timer.resume()
         evaluationTimer = timer
-        panelSwitch.state.record("started display-control=\(Panel.canSwitch ? "available" : "missing")")
+        let hotKeyIsRegistered = ToggleHotKey.register { [weak self] in
+            self?.queue.async { self?.handle(.toggle) }
+        }
+        panelSwitch.state.record("started display-control=\(Panel.canSwitch ? "available" : "missing") hotkey=\(hotKeyIsRegistered ? "registered" : "refused")")
     }
 
     private func evaluate() {

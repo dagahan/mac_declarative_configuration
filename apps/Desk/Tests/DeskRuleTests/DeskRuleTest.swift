@@ -41,4 +41,30 @@ final class DeskRuleTest: XCTestCase {
         rule.forgetManualChoice()
         XCTAssertEqual(rule.decide(realMonitorSerials: bothMonitors, at: 5), .turnOff)
     }
+
+    func testNoMonitorsAtLaunchMeansPanelOn() {
+        var rule = DeskRule()
+        XCTAssertEqual(rule.decide(realMonitorSerials: [], at: 0), .turnOn)
+    }
+
+    func testTheStandInDisplayIsNotAMonitor() {
+        let standIn = DisplayFacts(
+            id: 9, serial: 0, vendor: DisplayFacts.standInVendor, model: DisplayFacts.standInModel,
+            isBuiltin: false, isOnline: true, mirrorsAnotherDisplay: false
+        )
+        let standInWithASerial = DisplayFacts(
+            id: 9, serial: 77, vendor: DisplayFacts.standInVendor, model: DisplayFacts.standInModel,
+            isBuiltin: false, isOnline: true, mirrorsAnotherDisplay: false
+        )
+        XCTAssertEqual(realMonitorSerials([standIn, standInWithASerial]), [])
+        var rule = DeskRule()
+        XCTAssertEqual(rule.decide(realMonitorSerials: realMonitorSerials([standIn]), at: 0), .turnOn)
+    }
+
+    func testMonitorsThatLeftDuringSleepLightThePanelOnTheFirstLookAfterWaking() {
+        var rule = DeskRule()
+        _ = rule.decide(realMonitorSerials: bothMonitors, at: 0)
+        XCTAssertEqual(rule.decide(realMonitorSerials: bothMonitors, at: 2), .turnOff)
+        XCTAssertEqual(rule.decide(realMonitorSerials: [], at: 30_000), .turnOn)
+    }
 }
