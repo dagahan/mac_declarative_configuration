@@ -1,4 +1,4 @@
-requires=(aerospace alttab ainto karabiner dock input menubar bitwarden dotfiles inputlock desk)
+requires=(aerospace alttab ainto easydict karabiner dock input menubar bitwarden dotfiles inputlock desk)
 workspace=1
 
 service Dock        kind=killall

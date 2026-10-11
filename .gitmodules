@@ -19,3 +19,7 @@
 [submodule "private/vpn"]
 	path = private/vpn
 	url = git@github.com:dagahan/mac_setup_vpn.git
+[submodule "vendor/Easydict"]
+	path = vendor/Easydict
+	url = git@github.com:dagahan/Easydict.git
+	branch = mac-setup
