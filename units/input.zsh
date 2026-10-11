@@ -11,3 +11,6 @@ default NSGlobalDomain InitialKeyRepeat int 15  on_workspace_down=delete
 default com.apple.AppleMultitouchTrackpad                  TrackpadThreeFingerVertSwipeGesture int 0    on_workspace_down=2
 default com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerVertSwipeGesture int 0    on_workspace_down=2
 default com.apple.dock showMissionControlGestureEnabled    bool false                                   on_workspace_down=true
+
+file secure-input-watch-plist from=config/launchd/secure-input-watch.plist \
+     at="$HOME/.config/mac_setup/launchd/com.mac-setup.secure-input-watch.plist"

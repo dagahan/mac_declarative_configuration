@@ -16,3 +16,9 @@ run karabiner-services root=1 \
 manual karabiner-permissions \
     do="System Settings > Login Items & Extensions: enable the Karabiner driver extension and both background agents; Privacy > Accessibility: enable Karabiner-Core-Service" \
     detect='grep -q "monitor is started (grabbed)" /var/log/karabiner/core_service.log'
+
+run karabiner-config-loaded \
+    why="Karabiner watches the link, not the file behind it, so an edit to karabiner.json is not loaded until the link is touched" \
+    check='[[ "$(stat -f %m "$HOME/.config/karabiner/karabiner.json")" -ge "$(stat -L -f %m "$HOME/.config/karabiner/karabiner.json")" ]]' \
+    apply='touch -h "$HOME/.config/karabiner/karabiner.json"' \
+    irreversible="a touch changes only the link's timestamp"

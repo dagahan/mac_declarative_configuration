@@ -28,3 +28,8 @@ run desk why="the laptop panel goes dark while monitors are attached, and a new 
     check='zsh recipes/desk.zsh check && ! restart_pending mac-desk' \
     apply='zsh recipes/desk.zsh up && restart_done mac-desk' \
     revert='zsh recipes/desk.zsh down'
+
+run secure-input-watch why="names the app that takes Secure Input, in a notification and in the log mac do hotkeys reads" \
+    check='launchctl print "gui/$UID/com.mac-setup.secure-input-watch" 2>/dev/null | grep -q "state = running"' \
+    apply='launchctl bootstrap "gui/$UID" "$HOME/.config/mac_setup/launchd/com.mac-setup.secure-input-watch.plist" && sleep 1' \
+    revert='launchctl bootout "gui/$UID/com.mac-setup.secure-input-watch" 2>/dev/null; true'

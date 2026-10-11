@@ -18,6 +18,11 @@ print -r -- "  1. Secure Input — blocks every shortcut on the machine"
 zsh "$ROOT/recipes/support/secure-input.zsh"
 rc=$?
 
+print -r -- "  Secure Input, most recent first"
+print -r -- ""
+tail -r "$HOME/.local/state/mac_setup/secure-input.log" 2>/dev/null | grep -m5 -E 'TURNED ON|turned off' | sed 's/^/    /'
+print -r -- ""
+
 print -r -- "  2. Processes tapping the keyboard"
 print -r -- ""
 zsh "$ROOT/recipes/support/keyboard-taps.zsh" 2>/dev/null || print -r -- "    (probe unavailable)"
@@ -36,6 +41,18 @@ if pgrep -qx AeroSpace; then
         "$(/opt/homebrew/bin/aerospace config --get "mode.$(/opt/homebrew/bin/aerospace list-modes --current 2>/dev/null).binding" --keys 2>/dev/null | grep -cE '^alt-[0-9]$')"
 else
     print -r -- "    NOT RUNNING — run: mac workspace up"
+fi
+print -r -- ""
+
+print -r -- "  4. Karabiner"
+print -r -- ""
+keyboards_grabbed=$(grep -E 'hid queue value monitor is (started \(grabbed\)|stopped)' /var/log/karabiner/core_service.log 2>/dev/null \
+    | awk -F'] ' '{ line = $NF; device = line; sub(/ \(device_id.*/, "", device); state[device] = (line ~ /grabbed/) } END { for (d in state) if (state[d]) n++; print n + 0 }')
+if (( keyboards_grabbed > 0 )); then
+    print -r -- "    grabbing $keyboards_grabbed device(s)"
+else
+    print -r -- "    NOT GRABBING any keyboard — restart it with:"
+    print -r -- "    sudo launchctl kickstart -k system/org.pqrs.service.daemon.Karabiner-Core-Service"
 fi
 print -r -- ""
 

@@ -23,22 +23,16 @@ holder_pid() {
     ioreg -l -w 0 2>/dev/null | LC_ALL=C sed -n 's/.*"kCGSSessionSecureInputPID"=\([0-9]*\).*/\1/p' | head -1
 }
 frontmost() {
-    osascript -e 'tell application "System Events" to name of first application process whose frontmost is true' 2>/dev/null
+    lsappinfo info -only name "$(lsappinfo front)" 2>/dev/null | cut -d'"' -f4
 }
 
 notify() {
-    osascript -e "display notification \"$1\" with title \"Hotkeys blocked\" sound name \"Basso\"" >/dev/null 2>&1
+    osascript -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1
 }
-
-# A password field holds Secure Input for seconds. Anything still holding it after
-# this long has leaked it, and every shortcut on the machine stays dead until that
-# app is quit — worth interrupting for, because nothing else tells you.
-STUCK_AFTER="${MAC_SECURE_INPUT_STUCK_AFTER:-30}"
 
 prev=$("$BIN")
 note "watch started — Secure Input is $prev"
 on_since=0
-warned=0
 
 while :; do
     sleep "$INTERVAL"
@@ -47,24 +41,18 @@ while :; do
         if [[ "$now" == "ON" ]]; then
             pid=$(holder_pid)
             who=$(ps -p "$pid" -o comm= 2>/dev/null)
-            note "TURNED ON  enabler=pid ${pid:-?} ${who:-<already gone>}  frontmost=$(frontmost)"
+            front=$(frontmost)
+            note "TURNED ON  enabler=pid ${pid:-?} ${who:-<already gone>}  frontmost=$front"
             ps -p "$pid" -o pid=,lstart=,command= 2>/dev/null | cut -c1-140 | sed 's/^/    /' >> "$LOG"
             on_since=$SECONDS
-            warned=0
+            if [[ -n "$who" ]]; then
+                notify "Secure Input: ${who:t}" "Frontmost app: $front. Hotkeys keep working through Karabiner."
+            else
+                notify "Secure Input is stuck" "The app that took it has quit. Lock and unlock the screen (ctrl+cmd+Q) to release it."
+            fi
         else
             note "turned off — released after $(( SECONDS - on_since ))s"
-            on_since=0
-            warned=0
         fi
         prev="$now"
-        continue
-    fi
-    # Unchanged: only interesting if it has been ON too long to be a real password field.
-    if [[ "$now" == "ON" ]] && (( on_since > 0 && ! warned && SECONDS - on_since >= STUCK_AFTER )); then
-        warned=1
-        pid=$(holder_pid)
-        who=$(ps -p "$pid" -o comm= 2>/dev/null | sed 's|.*/||')
-        note "STUCK — ${who:-pid $pid} has held Secure Input for ${STUCK_AFTER}s; all hotkeys are blocked"
-        notify "${who:-A process} is blocking every hotkey. Run: mac do hotkeys"
     fi
 done
