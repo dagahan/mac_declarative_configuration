@@ -68,7 +68,7 @@
                         ]
                     },
                     {
-                        "description": "Option+1-0, E R T Y X C V B, D, S, F -> Ctrl+Option+key: macOS drops Option-only hotkeys while an app holds Secure Input, Ctrl chords still fire (AeroSpace and Easydict bind both forms)",
+                        "description": "Option+1-0, E R T Y X C V B, D, S -> Ctrl+Option+key: macOS drops Option-only hotkeys while an app holds Secure Input, Ctrl chords still fire (AeroSpace and Easydict bind both forms)",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -169,11 +169,6 @@
                                 "type": "basic",
                                 "from": { "key_code": "s", "modifiers": { "mandatory": ["option"], "optional": ["shift", "caps_lock"] } },
                                 "to": [{ "key_code": "s", "modifiers": ["left_control", "left_option"] }]
-                            },
-                            {
-                                "type": "basic",
-                                "from": { "key_code": "f", "modifiers": { "mandatory": ["option"], "optional": ["shift", "caps_lock"] } },
-                                "to": [{ "key_code": "f", "modifiers": ["left_control", "left_option"] }]
                             }
                         ]
                     },

@@ -146,8 +146,6 @@ gaps.outer.right =      0
     alt-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
     cmd-q = 'close'
     alt-w = 'close --quit-if-last-window'
-    alt-f = 'smart-open Finder'
-    ctrl-alt-f = 'smart-open Finder'
     # Swallow cmd+m: minimize is banned on tiling workspaces
     cmd-m = 'exec-and-forget true'
 
@@ -286,8 +284,6 @@ gaps.outer.right =      0
     alt-enter = 'exec-and-forget open -na /Applications/kitty.app --args --single-instance --directory ~'
     cmd-q = 'close'
     alt-w = 'close --quit-if-last-window'
-    alt-f = 'smart-open Finder'
-    ctrl-alt-f = 'smart-open Finder'
     alt-e = 'focus-monitor letter:e'
     ctrl-alt-e = 'focus-monitor letter:e'
     alt-r = 'focus-monitor letter:r'
