@@ -28,6 +28,17 @@ final class DeskRuleTest: XCTestCase {
         XCTAssertEqual(rule.decide(realMonitorSerials: [3996], at: 102.5), .turnOff)
     }
 
+    func testAfterWakingThePanelStaysOnUntilTheMonitorsSettleEvenWhenOffWasChosen() {
+        var rule = DeskRule()
+        _ = rule.decide(realMonitorSerials: bothMonitors, at: 0)
+        XCTAssertTrue(rule.choose(panelOn: false, realMonitorSerials: bothMonitors))
+        rule.woke(at: 100)
+        XCTAssertEqual(rule.decide(realMonitorSerials: bothMonitors, at: 100), .leaveAsIs)
+        XCTAssertEqual(rule.decide(realMonitorSerials: [], at: 100.4), .turnOn)
+        XCTAssertEqual(rule.decide(realMonitorSerials: bothMonitors, at: 101.4), .leaveAsIs)
+        XCTAssertEqual(rule.decide(realMonitorSerials: bothMonitors, at: 102.9), .turnOff)
+    }
+
     func testTurningThePanelOffWithNoMonitorIsRefused() {
         var rule = DeskRule()
         XCTAssertFalse(rule.choose(panelOn: false, realMonitorSerials: []))

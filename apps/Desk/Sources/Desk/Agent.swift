@@ -14,6 +14,7 @@ final class Agent: NSObject {
     private var publishedStatus = ""
     private var signalSources: [DispatchSourceSignal] = []
     private var rememberedPanelId: UInt32?
+    private var isAsleep = false
 
     static func run() {
         guard let agentLock = DeskState().takeAgentLock() else {
@@ -35,8 +36,11 @@ final class Agent: NSObject {
                 self?.queue.async { self?.handle(command) }
             }
         }
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { [weak self] _ in
+            self?.queue.sync { self?.sleep() }
+        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: nil) { [weak self] _ in
-            self?.queue.async { self?.panelSwitch.keepKeyboardDarkWhilePanelIsOff() }
+            self?.queue.async { self?.wake() }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: nil) { [weak self] _ in
             self?.queue.async { self?.evaluate() }
@@ -60,7 +64,26 @@ final class Agent: NSObject {
         panelSwitch.state.record("started display-control=\(Panel.canSwitch ? "available" : "missing") hotkey=\(hotKeyIsRegistered ? "registered" : "refused")")
     }
 
+    private func sleep() {
+        isAsleep = true
+        if !Displays.online().contains(where: \.isBuiltin) {
+            panelSwitch.turnPanelOn(because: "sleep")
+            lastEvent = "panel-on"
+        }
+        panelSwitch.state.record("sleep")
+    }
+
+    private func wake() {
+        isAsleep = false
+        rule.woke(at: Date().timeIntervalSinceReferenceDate)
+        lastAttempt = [:]
+        panelSwitch.state.record("wake")
+        panelSwitch.keepKeyboardDarkWhilePanelIsOff()
+        evaluate()
+    }
+
     private func evaluate() {
+        guard !isAsleep else { return }
         let displays = Displays.online()
         let panel = displays.first(where: \.isBuiltin)
         if let panel, panel.id != rememberedPanelId {

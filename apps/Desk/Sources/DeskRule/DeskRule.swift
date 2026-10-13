@@ -17,6 +17,7 @@ public struct DeskRule {
     private var monitors: Set<UInt32> = []
     private var monitorsUnchangedSince: TimeInterval = 0
     private var manualChoice: ManualChoice?
+    private var panelStaysOnUntil: TimeInterval = 0
 
     public init() {}
 
@@ -29,8 +30,14 @@ public struct DeskRule {
             if manualChoice?.madeWithMonitors != realMonitorSerials { manualChoice = nil }
         }
         if realMonitorSerials.isEmpty { return .turnOn }
-        if let manualChoice { return manualChoice.panelOn ? .turnOn : .turnOff }
+        if let manualChoice, manualChoice.panelOn { return .turnOn }
+        if now < panelStaysOnUntil { return .leaveAsIs }
+        if manualChoice != nil { return .turnOff }
         return now - monitorsUnchangedSince >= Self.monitorsSettleSeconds ? .turnOff : .leaveAsIs
+    }
+
+    public mutating func woke(at now: TimeInterval) {
+        panelStaysOnUntil = now + Self.monitorsSettleSeconds
     }
 
     public mutating func choose(panelOn: Bool, realMonitorSerials: Set<UInt32>) -> Bool {
